@@ -1,0 +1,41 @@
+{# Inicio del panel del organizador (GET /panel): lista de sus rifas. #}
+{% extends "panel/base_panel.html" %}
+{% set seccion = 'inicio' %}
+{% block titulo %}Panel · RifaPlus{% endblock %}
+{% block contenido %}
+{% if usuario.organizador and not usuario.organizador.verificado %}
+<div class="alerta aviso chico">Su identidad está <b>por verificar</b>. Puede publicar su primera rifa sin problema; para publicar más, RifaPlus revisa su nombre y su número de documento.</div>
+{% endif %}
+{% if request.query_params.get("eliminada") %}<div class="alerta ok">La rifa fue eliminada.</div>{% endif %}
+{% if bienvenida %}<div class="alerta ok">Su clave quedó guardada. Bienvenido a RifaPlus.</div>{% endif %}
+<div class="encabezado-pagina">
+  <div><h1 style="font-size:1.8rem">Mis rifas</h1><p class="muted">{{ usuario.organizador.nombre }}</p></div>
+  <a class="boton" href="/panel/rifas/nueva">Crear rifa</a>
+</div>
+{% if rifas %}
+<div class="tabla-envoltura">
+  <table class="datos">
+    <thead><tr><th>Rifa</th><th>Premio mayor</th><th>Sorteo</th><th>Lotería</th><th>Boletas vendidas</th><th>Valor boleta</th><th>Estado</th></tr></thead>
+    <tbody>
+    {% for r in rifas %}
+      <tr>
+        <td><a href="/panel/rifas/{{ r.id }}"><b>{{ r.nombre }}</b></a></td>
+        <td>{% set mayor = r.premios|selectattr('tipo', 'equalto', 'mayor')|first %}{{ mayor.descripcion if mayor }}{% if mayor and mayor.valor_estimado %}<br><span class="muted chico">{{ mayor.valor_estimado|pesos }}</span>{% endif %}{% set secos = r.premios|selectattr('tipo', 'equalto', 'seco')|list %}{% if secos %}<br><span class="muted chico">+ {{ secos|length }} premio{{ 's' if secos|length > 1 }} seco{{ 's' if secos|length > 1 }}</span>{% endif %}</td>
+        <td>{{ r.fecha_sorteo|fecha_larga }}</td>
+        <td>{{ r.loteria.nombre }}</td>
+        <td>{{ vendidas.get(r.id, 0)|miles }} de {{ r.total_boletas|miles }}</td>
+        <td>{{ r.valor_boleta|pesos }}</td>
+        <td>{% if r.estado == 'en_venta' and r.vigente_hasta and (r.vigente_hasta - hoy).days < 0 %}<span class="estado anulada">bloqueada</span>{% else %}<span class="estado {{ r.estado }}">{{ r.estado|replace('_',' ') }}</span>{% endif %}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div class="vacio">
+  <h2>Todavía no tiene rifas</h2>
+  <p class="muted">Cree su primera rifa: escoja la lotería, la fecha y cuántos números trae cada boleta. Las rifas pequeñas son gratis.</p>
+  <a class="boton grande" href="/panel/rifas/nueva">Crear mi primera rifa</a>
+</div>
+{% endif %}
+{% endblock %}

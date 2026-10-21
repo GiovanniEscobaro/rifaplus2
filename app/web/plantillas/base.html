@@ -1,0 +1,34 @@
+{# Estructura común de todas las páginas: <head>, tipografía, estilos y los scripts globales (ojito de la clave y formularios). #}
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block titulo %}RifaPlus{% endblock %}</title>
+  {% set og_titulo = self.og_titulo() | trim or "RifaPlus · Rifas organizadas, de la primera boleta al ganador" %}
+  {% set og_descripcion = self.og_descripcion() | trim or "Organice sus rifas, venda boletas, registre abonos y encuentre al ganador con el resultado de la lotería." %}
+  <meta name="description" content="{{ og_descripcion }}">
+  {# Vista previa cuando el enlace se comparte por WhatsApp, Facebook o correo #}
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="RifaPlus">
+  <meta property="og:title" content="{{ og_titulo }}">
+  <meta property="og:description" content="{{ og_descripcion }}">
+  {% set og_imagen = self.og_imagen() | trim %}
+  <meta property="og:image" content="{{ config.app_url }}{{ og_imagen or '/estaticos/img/rifaplus-vista-previa.png' }}">
+  {% if not og_imagen %}<meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">{% endif %}
+  <meta property="og:url" content="{{ config.app_url }}{{ request.url.path }}">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="icon" href="/estaticos/img/rifaplus-favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/estaticos/css/rifaplus.css?v={{ v }}">
+</head>
+<body>{% if false %}{% block og_titulo %}{% endblock %}{% block og_descripcion %}{% endblock %}{% block og_imagen %}{% endblock %}{% endif %}
+{% block cuerpo %}{% endblock %}
+<script src="/estaticos/js/ver-clave.js?v={{ v }}" defer></script>
+<script src="/estaticos/js/formularios.js?v={{ v }}" defer></script>
+<script src="/estaticos/js/menu.js?v={{ v }}" defer></script>
+</body>
+</html>

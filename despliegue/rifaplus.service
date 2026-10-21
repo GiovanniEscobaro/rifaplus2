@@ -1,0 +1,17 @@
+# Servicio de systemd: mantiene RifaPlus corriendo y lo reinicia si se cae o si el servidor se reinicia.
+# Copiar a /etc/systemd/system/rifaplus.service y luego:  sudo systemctl enable --now rifaplus
+[Unit]
+Description=RifaPlus (FastAPI)
+After=network.target postgresql.service
+
+[Service]
+User=rifaplus
+Group=rifaplus
+WorkingDirectory=/opt/rifaplus
+EnvironmentFile=/opt/rifaplus/.env
+ExecStart=/opt/rifaplus/.venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8001 --workers 2 --proxy-headers --forwarded-allow-ips=127.0.0.1
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target

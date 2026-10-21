@@ -1,0 +1,32 @@
+{# Estructura de la zona del superadministrador: menú lateral oscuro y avisos. #}
+{% extends "base.html" %}
+{% block cuerpo %}
+<div class="panel panel-admin">
+  <aside class="lateral">
+    <a href="/admin"><img src="/estaticos/img/rifaplus-solo-nombre-fondo-azul.svg" alt="RifaPlus"></a>
+    <span class="insignia-admin">Superadministrador</span>
+    <button type="button" class="boton-menu" aria-expanded="false" aria-label="Abrir el menú">☰ Menú</button>
+    <nav aria-label="Menú del superadministrador">
+      <a href="/admin" {% if seccion == 'inicio' %}aria-current="page"{% endif %}>Resumen</a>
+      <a href="/admin/organizadores" {% if seccion == 'organizadores' %}aria-current="page"{% endif %}>Organizadores</a>
+      <a href="/admin/cobros" {% if seccion == 'cobros' %}aria-current="page"{% endif %}>Pagos por revisar</a>
+      <a href="/admin/cuentas" {% if seccion == 'cuentas' %}aria-current="page"{% endif %}>Cuentas de RifaPlus</a>
+      <a href="/admin/planes" {% if seccion == 'planes' %}aria-current="page"{% endif %}>Precios de las rifas</a>
+      <a href="/admin/loterias" {% if seccion == 'loterias' %}aria-current="page"{% endif %}>Loterías</a>
+      <a href="/admin/soporte" {% if seccion == 'soporte' %}aria-current="page"{% endif %}>Soporte</a>
+      <a href="/admin/datos" {% if seccion == 'datos' %}aria-current="page"{% endif %}>Base de datos</a>
+      <a href="/cambiar-clave">Cambiar clave</a>
+    </nav>
+    <div class="usuario">
+      <div>{{ usuario.nombre }}</div>
+      <form method="post" action="/salir"><button class="enlace-boton" type="submit">Cerrar sesión</button></form>
+    </div>
+  </aside>
+  <main class="contenido">
+    {% if aviso %}<div class="alerta ok">{{ aviso }}</div>{% endif %}
+    {% if error %}<div class="alerta error" role="alert">{{ error }}</div>{% endif %}
+    {% block contenido %}{% endblock %}
+  </main>
+</div>
+<script src="/estaticos/js/confirmar.js?v={{ v }}" defer></script>
+{% endblock %}

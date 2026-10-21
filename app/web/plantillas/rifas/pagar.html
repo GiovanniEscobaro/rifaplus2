@@ -1,0 +1,46 @@
+{# Pagar el plan de la rifa a RifaPlus (GET/POST /panel/rifas/{id}/pagar): valor, cuentas de RifaPlus y envío del comprobante. #}
+{% extends "panel/base_panel.html" %}
+{% set seccion = 'rifas' %}
+{% block titulo %}Publicar {{ rifa.nombre }} · RifaPlus{% endblock %}
+{% block contenido %}
+<p><a href="/panel/rifas/{{ rifa.id }}">← {{ rifa.nombre }}</a></p>
+<div class="encabezado-pagina"><div><h1 style="font-size:1.8rem">Publicar su rifa</h1>
+  <p class="muted">Su rifa de <b>{{ rifa.total_boletas|miles }} boletas de {{ rifa.series_por_boleta }} cifra{{ 's' if rifa.series_por_boleta > 1 }}</b> paga este valor una sola vez.</p></div></div>
+{% if errores %}<div class="alerta error" role="alert"><ul>{% for e in errores %}<li>{{ e }}</li>{% endfor %}</ul></div>{% endif %}
+
+{% if estado_cobro == 'en_revision' %}
+  <div class="alerta aviso">Ya recibimos su pago y lo estamos revisando. Su rifa quedará publicada en cuanto lo confirmemos.</div>
+{% else %}
+<div class="dos-columnas">
+  <section class="tarjeta" style="width:100%;max-width:none">
+    <h2 style="font-size:1.2rem">1. Pague</h2>
+    <p class="valor-plan">{{ cobro.valor|pesos }}</p>
+    {% if cuentas %}
+      <p class="muted chico">Envíe ese valor a cualquiera de estas cuentas de RifaPlus. Con la llave Bre-B puede pagar desde cualquier banco o billetera:</p>
+      <ul class="lista-premios">
+        {% for c in cuentas %}<li class="mayor"><span class="tipo-premio">{{ c.medio_pago.nombre }}</span><b>{{ c.numero_cuenta }}</b><span class="muted chico">A nombre de {{ c.titular }}</span></li>{% endfor %}
+      </ul>
+    {% else %}
+      <div class="alerta aviso">RifaPlus todavía no ha publicado sus cuentas de pago. Comuníquese con RifaPlus para saber a dónde pagar.</div>
+    {% endif %}
+    {% if estado_cobro == 'rechazado' %}<div class="alerta error" style="margin-top:1rem">El pago anterior no se pudo confirmar: {{ cobro.motivo_rechazo }}</div>{% endif %}
+  </section>
+
+  <form class="tarjeta" method="post" action="/panel/rifas/{{ rifa.id }}/pagar" enctype="multipart/form-data" style="width:100%;max-width:none">
+    <h2 style="font-size:1.2rem">2. Cuéntenos que pagó</h2>
+    <div class="campo"><label for="medio">¿Por dónde pagó?</label>
+      <select id="medio" name="medio_pago_id" required data-validar="seleccion">
+        <option value="">Escoja…</option>
+        {% for m in medios %}<option value="{{ m.id }}" {% if datos.medio_pago_id == m.id|string %}selected{% endif %}>{{ m.nombre }}</option>{% endfor %}
+      </select></div>
+    <div class="campo"><label for="referencia">Referencia de la transacción</label>
+      <input id="referencia" name="referencia" type="text" maxlength="100" value="{{ datos.referencia or '' }}" placeholder="Aparece en el comprobante de su banco o billetera"></div>
+    <div class="campo"><label for="comprobante">Foto del comprobante</label>
+      <input id="comprobante" name="comprobante" type="file" accept="image/jpeg,image/png,image/webp,application/pdf">
+      <span class="ayuda">Envíe la referencia, la foto, o las dos.</span></div>
+    <button class="boton grande" type="submit">Enviar pago y publicar</button>
+    <p class="muted chico" style="margin-top:.75rem">Su rifa quedará publicada en cuanto RifaPlus confirme el pago. Mientras tanto no podrá editarla.</p>
+  </form>
+</div>
+{% endif %}
+{% endblock %}

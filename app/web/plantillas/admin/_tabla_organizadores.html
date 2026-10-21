@@ -1,0 +1,21 @@
+{# Tabla de organizadores reutilizada en el resumen y en la lista. #}
+{% set lista = filas if filas is defined else ultimos %}
+<div class="tabla-envoltura">
+  <table class="datos">
+    <thead><tr><th>Organizador</th><th>Identidad</th><th>Correo</th><th>WhatsApp</th><th>Rifas</th><th>Estado</th><th>Registro</th><th>Último ingreso</th></tr></thead>
+    <tbody>
+    {% for f in lista %}
+      <tr>
+        <td><a href="/admin/organizadores/{{ f.organizador.id }}"><b>{{ f.organizador.nombre }}</b></a><br><span class="muted chico">{{ 'Jurídica' if f.organizador.tipo_persona == 'juridica' else 'Natural' }}</span></td>
+        <td>{{ f.organizador.tipo_documento or '' }} {{ f.organizador.numero_documento or '—' }}<br>{% if f.organizador.verificado %}<span class="estado aprobado">verificado</span>{% else %}<span class="estado pendiente">por verificar</span>{% endif %}</td>
+        <td>{{ f.organizador.email }}</td><td>{{ f.organizador.whatsapp }}</td><td>{{ f.rifas|miles }}</td>
+        <td><span class="estado {{ f.organizador.estado }}">{{ f.organizador.estado }}</span></td>
+        <td>{{ f.organizador.fecha_creacion|fecha_larga }}</td>
+        <td>{{ f.ultimo_acceso|fecha_larga if f.ultimo_acceso else 'Nunca' }}</td>
+      </tr>
+    {% else %}
+      <tr><td colspan="8" class="muted">No hay organizadores que coincidan.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>

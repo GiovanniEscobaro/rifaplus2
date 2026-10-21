@@ -1,0 +1,176 @@
+{# Página de una boleta (GET /panel/rifas/{id}/boletas/{id}): vender, plan de pagos, pagos, abonos y WhatsApp. #}
+{% extends "panel/base_panel.html" %}
+{% set seccion = 'rifas' %}
+{% block titulo %}Boleta {{ boleta.etiqueta }} · {{ rifa.nombre }}{% endblock %}
+{% macro campo_pago(prefijo='') %}
+  <div class="fila-3">
+    <div class="campo"><label for="{{ prefijo }}monto">Valor que le pagaron</label>
+      <input id="{{ prefijo }}monto" name="monto" type="text" inputmode="numeric" class="campo-pesos" data-validar="pesos" value="{{ datos.monto or '' }}" placeholder="{{ saldo.pendiente|miles }}"></div>
+    <div class="campo"><label for="{{ prefijo }}medio">¿Cómo le pagaron?</label>
+      <select id="{{ prefijo }}medio" name="medio_pago_id">
+        <option value="">Escoja…</option>
+        {% for m in medios %}<option value="{{ m.id }}" {% if datos.medio_pago_id == m.id|string %}selected{% endif %}>{{ m.nombre }}</option>{% endfor %}
+      </select></div>
+    <div class="campo"><label for="{{ prefijo }}referencia">Referencia (opcional)</label>
+      <input id="{{ prefijo }}referencia" name="referencia" type="text" maxlength="100" value="{{ datos.referencia or '' }}" placeholder="N.° de transacción"></div>
+  </div>
+  <div class="campo"><label for="{{ prefijo }}comprobante">Foto del comprobante (opcional)</label>
+    <input id="{{ prefijo }}comprobante" name="comprobante" type="file" accept="image/jpeg,image/png,image/webp,application/pdf">
+    <span class="ayuda">JPG, PNG o PDF, máximo 5 MB.</span></div>
+{% endmacro %}
+{% block contenido %}
+<p><a href="/panel/rifas/{{ rifa.id }}">← {{ rifa.nombre }}</a></p>
+{% if aviso == 'vendida' %}<div class="alerta ok">Boleta vendida.{% if whatsapp %} Avísele al comprador por WhatsApp con el botón de abajo.{% endif %}</div>
+{% elif aviso == 'pago' %}<div class="alerta ok">Pago registrado.{% if whatsapp %} Puede avisarle al comprador por WhatsApp.{% endif %}</div>
+{% elif aviso == 'liberada' %}<div class="alerta ok">La boleta quedó disponible de nuevo.</div>{% endif %}
+{% if rifa.estado == 'en_venta' and rifa.vigente_hasta and (rifa.vigente_hasta - hoy).days < 0 %}
+<div class="alerta error aviso-vigencia"><span><b>Rifa bloqueada por falta de renovación.</b> No puede vender ni registrar pagos hasta renovarla.</span><a class="boton" href="/panel/rifas/{{ rifa.id }}/renovar">Renovar</a></div>
+{% endif %}
+{% if errores %}<div class="alerta error" role="alert"><ul>{% for e in errores %}<li>{{ e }}</li>{% endfor %}</ul></div>{% endif %}
+
+<div class="encabezado-pagina">
+  <div>
+    <h1 style="font-size:1.8rem">Boleta {{ boleta.etiqueta }}</h1>
+    {% if rifa.series_por_boleta > 1 %}<p class="muted chico" style="margin:0">Cifras de la boleta:</p>{% endif %}
+    <div class="nums-grandes">{% for n in boleta.numeros %}<span>{{ n.numero }}</span>{% endfor %}</div>
+    <p class="muted chico">Código de verificación: {{ boleta.codigo_verificacion }}</p>
+  </div>
+  <div class="acciones-boleta">
+    {% if boleta.estado == 'vendida' %}<a class="boton secundario" href="/panel/rifas/{{ rifa.id }}/boletas/{{ boleta.id }}/imprimir" target="_blank" rel="noopener">Ver boleta para imprimir</a>{% endif %}
+  {% if boleta.estado == 'vendida' %}
+    <span class="estado {{ 'aprobado' if saldo.estado == 'pagada' else 'pendiente' }}">{{ 'Pagada' if saldo.estado == 'pagada' else ('Abonada' if saldo.estado == 'abonada' else 'Debe todo') }}</span>
+  {% else %}<span class="estado {{ boleta.estado }}">{{ boleta.estado|capitalize }}</span>{% endif %}
+  </div>
+</div>
+
+<section class="tarjeta" style="width:100%;max-width:none;margin-bottom:1.25rem">
+  <h2 style="font-size:1.2rem">Premios que juega esta boleta</h2>
+  {% include "componentes/premios_rifa.html" %}
+</section>
+
+{% if boleta.estado == 'disponible' %}
+  {% if rifa.estado != 'en_venta' %}
+    <div class="alerta aviso">Publique la rifa para poder vender sus boletas.</div>
+  {% else %}
+  <form class="tarjeta ancha" method="post" action="/panel/rifas/{{ rifa.id }}/boletas/{{ boleta.id }}/vender" enctype="multipart/form-data" style="width:100%;max-width:880px">
+    <h2 style="font-size:1.2rem">Vender esta boleta</h2>
+    <p class="muted">Todos los datos del comprador son obligatorios: si gana, hay que poder ubicarlo para entregarle el premio.</p>
+    <div class="fila">
+      <div class="campo"><label for="tipo_documento">Tipo de documento</label>
+        <select id="tipo_documento" name="tipo_documento" required data-validar="seleccion">
+          <option value="">Escoja…</option>
+          {% for v, t in tipos_documento.items() %}<option value="{{ v }}" {% if datos.tipo_documento == v %}selected{% endif %}>{{ t }}</option>{% endfor %}
+        </select></div>
+      <div class="campo"><label for="numero_documento">Número de documento</label>
+        <input id="numero_documento" name="numero_documento" type="text" inputmode="numeric" required maxlength="20" data-validar="requerido documento" value="{{ datos.numero_documento or '' }}">
+        <span class="ayuda" id="aviso-comprador" aria-live="polite"></span></div>
+    </div>
+    <div class="campo"><label for="nombre">Nombre completo</label>
+      <input id="nombre" name="nombre" type="text" required maxlength="150" data-validar="requerido nombre" value="{{ datos.nombre or '' }}"></div>
+    <div class="fila">
+      <div class="campo"><label for="celular">Celular</label>
+        <input id="celular" name="celular" type="tel" required data-validar="requerido celular" placeholder="300 123 4567" value="{{ datos.celular or '' }}"></div>
+      <div class="campo"><label for="whatsapp">WhatsApp</label>
+        <input id="whatsapp" name="whatsapp" type="tel" data-validar="requerido celular" placeholder="300 123 4567" value="{{ datos.whatsapp or '' }}"></div>
+    </div>
+    <label class="casilla"><input type="checkbox" id="mismo_numero" name="mismo_numero" value="true" {% if datos.mismo_numero == 'true' or not datos %}checked{% endif %}> El WhatsApp es el mismo número del celular</label>
+    <div class="campo"><label for="email">Correo electrónico</label>
+      <input id="email" name="email" type="email" required data-validar="requerido email" value="{{ datos.email or '' }}"></div>
+    <div class="fila">
+      <div class="campo"><label for="direccion">Dirección</label>
+        <input id="direccion" name="direccion" type="text" required maxlength="200" data-validar="requerido direccion" value="{{ datos.direccion or '' }}"></div>
+      <div class="campo"><label for="ciudad">Ciudad</label>
+        <input id="ciudad" name="ciudad" type="text" required maxlength="100" data-validar="requerido texto" value="{{ datos.ciudad or '' }}"></div>
+    </div>
+    <label class="casilla"><input type="checkbox" id="acepta_whatsapp" name="acepta_whatsapp" value="true" {% if datos.acepta_whatsapp == 'true' or not datos %}checked{% endif %}> El comprador acepta recibir avisos de esta rifa por WhatsApp</label>
+    <div class="fila">
+      <div class="campo"><label for="vendedor_id">Vendedor</label>
+        <select id="vendedor_id" name="vendedor_id">
+          <option value="">La vendí yo</option>
+          {% for v in vendedores %}<option value="{{ v.id }}" {% if datos.vendedor_id == v.id|string %}selected{% endif %}>{{ v.nombre }}</option>{% endfor %}
+        </select>
+        {% if not vendedores %}<span class="ayuda"><a href="/panel/vendedores">Agregar vendedores</a></span>{% endif %}</div>
+      <div class="campo"><label for="medio_difusion">¿Cómo se enteró? (opcional)</label>
+        <select id="medio_difusion" name="medio_difusion">
+          <option value="">—</option>
+          {% for v, t in medios_difusion.items() %}<option value="{{ v }}" {% if datos.medio_difusion == v %}selected{% endif %}>{{ t }}</option>{% endfor %}
+        </select></div>
+    </div>
+    <hr class="separador">
+    <p class="grupo-titulo">Pago (opcional)</p>
+    <p class="ayuda" style="margin-top:-.5rem">Puede registrar el valor completo ({{ rifa.valor_boleta|pesos }}), un abono, o dejarlo en blanco si todavía no le han pagado.</p>
+    {{ campo_pago() }}
+    <button class="boton grande" type="submit">Vender boleta</button>
+  </form>
+  <script src="/estaticos/js/vender.js?v={{ v }}" defer></script>
+  {% endif %}
+{% else %}
+  <div class="cifras">
+    <div class="cifra"><strong>{{ rifa.valor_boleta|pesos }}</strong><span>valor de la boleta</span></div>
+    <div class="cifra"><strong>{{ saldo.pagado|pesos }}</strong><span>pagado</span></div>
+    <div class="cifra"><strong>{{ saldo.pendiente|pesos }}</strong><span>por pagar</span></div>
+  </div>
+
+  <section class="tarjeta" style="width:100%;max-width:none;margin-bottom:1.25rem">
+    <h2 style="font-size:1.2rem">Plan de pagos {% if plan.atrasada %}<span class="estado anulada">Atrasada</span>{% endif %}</h2>
+    <div class="tabla-envoltura"><table class="datos">
+      <thead><tr><th>Cuota</th><th>Valor</th><th>A más tardar el</th><th>Estado</th></tr></thead>
+      <tbody>
+      {% for c in plan.cuotas %}
+        <tr {% if plan.proxima and c.numero == plan.proxima.numero %}class="fila-destacada"{% endif %}>
+          <td>{{ c.numero }}</td><td>{{ c.valor|pesos }}</td><td>{{ c.fecha_limite|fecha_larga }}</td>
+          <td>{% if c.pagada %}<span class="estado aprobado">Pagada</span>{% elif c.vencida %}<span class="estado anulada">Vencida</span>{% elif plan.proxima and c.numero == plan.proxima.numero %}<span class="estado pendiente">Próxima</span>{% else %}<span class="estado borrador">Pendiente</span>{% endif %}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table></div>
+  </section>
+
+  <div class="dos-columnas">
+    <section class="tarjeta" style="width:100%;max-width:none">
+      <h2 style="font-size:1.2rem">Comprador</h2>
+      {% set c = boleta.cliente %}
+      <p><b>{{ c.nombre }}</b><br>{{ c.tipo_documento }} {{ c.numero_documento }}</p>
+      <p class="chico">Celular: {{ c.celular }}<br>WhatsApp: {{ c.whatsapp }}<br>{{ c.email }}<br>{{ c.direccion }}, {{ c.ciudad }}</p>
+      <p class="chico muted">Vendió: {{ boleta.vendedor.nombre if boleta.vendedor else 'el organizador' }}</p>
+      <div class="acciones-sorteo">
+      {% if whatsapp %}
+        <a class="boton boton-whatsapp" href="{{ whatsapp }}" target="_blank" rel="noopener">Avisar por WhatsApp</a>
+      {% else %}<p class="chico muted">El comprador no aceptó avisos por WhatsApp.</p>{% endif %}
+      {% if correo %}<a class="boton secundario" href="{{ correo }}">Enviar por correo</a>{% endif %}
+      </div>
+    </section>
+
+    <section class="tarjeta" style="width:100%;max-width:none">
+      <h2 style="font-size:1.2rem">Pagos</h2>
+      {% if pagos %}
+      <div class="tabla-envoltura">
+        <table class="datos">
+          <thead><tr><th>Fecha</th><th>Valor</th><th>Medio</th><th>Referencia</th><th></th></tr></thead>
+          <tbody>
+          {% for p in pagos %}
+            <tr><td>{{ p.fecha_pago.strftime('%d/%m/%Y') }}</td><td>{{ p.monto|pesos }}</td><td>{{ p.medio_pago.nombre }}</td>
+                <td>{{ p.referencia or '—' }}</td>
+                <td>{% if p.comprobante_url %}<a href="/panel/comprobantes/{{ p.id }}" target="_blank" rel="noopener">Comprobante</a>{% endif %}</td></tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}<p class="muted">Todavía no hay pagos registrados.</p>{% endif %}
+
+      {% if saldo.pendiente > 0 %}
+      <form method="post" action="/panel/rifas/{{ rifa.id }}/boletas/{{ boleta.id }}/pagos" enctype="multipart/form-data" style="margin-top:1.25rem">
+        <h3>Registrar un pago</h3>
+        {{ campo_pago('p_') }}
+        <button class="boton" type="submit">Registrar pago</button>
+      </form>
+      {% endif %}
+      {% if saldo.pagado == 0 %}
+      <form method="post" action="/panel/rifas/{{ rifa.id }}/boletas/{{ boleta.id }}/liberar" style="margin-top:1rem" onsubmit="return confirm('¿Liberar esta boleta? Quedará disponible para venderla a otra persona.')">
+        <button class="enlace-boton" type="submit">Deshacer la venta (liberar boleta)</button>
+      </form>
+      {% endif %}
+    </section>
+  </div>
+{% endif %}
+{% endblock %}

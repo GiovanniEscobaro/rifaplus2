@@ -1,0 +1,15 @@
+{# Base de datos (GET /admin/datos): todas las tablas con su número de registros. Solo lectura. #}
+{% extends "admin/base_admin.html" %}
+{% block titulo %}Base de datos · Superadministrador{% endblock %}
+{% block contenido %}
+<div class="encabezado-pagina">
+  <div><h1 style="font-size:1.8rem">Base de datos</h1>
+    <p class="muted">Todas las tablas de RifaPlus. Aquí solo se consulta: nada se puede modificar ni borrar desde esta sección.</p></div>
+  <a class="boton" href="/admin/datos/consulta">Consulta SQL</a>
+</div>
+<div class="rejilla-tablas">
+  {% for nombre, cantidad in tablas %}
+  <a class="cifra" href="/admin/datos/{{ nombre }}"><strong>{{ cantidad|miles }}</strong><span>{{ nombre }}</span></a>
+  {% endfor %}
+</div>
+{% endblock %}

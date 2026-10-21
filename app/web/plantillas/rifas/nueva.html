@@ -1,0 +1,153 @@
+{# Formulario de nueva rifa (GET/POST /panel/rifas/nueva): opciones de boletas, forma de pago, premios secos, reglas y declaración. #}
+{% extends "panel/base_panel.html" %}
+{% set seccion = 'nueva' %}
+{% set editando = rifa is defined and rifa %}
+{% block titulo %}{{ "Editar rifa" if editando else "Nueva rifa" }} · RifaPlus{% endblock %}
+{% block contenido %}
+<link rel="stylesheet" href="/estaticos/css/boleta.css?v={{ v }}">
+{% if editando %}<p><a href="/panel/rifas/{{ rifa.id }}">← {{ rifa.nombre }}</a></p>{% endif %}
+<div class="encabezado-pagina"><div><h1 style="font-size:1.8rem">{{ "Editar rifa" if editando else "Nueva rifa" }}</h1>
+  <p class="muted">Al guardar, RifaPlus genera todas las boletas con sus cifras, sin repetir.</p></div></div>
+<form class="tarjeta ancha" method="post" action="{{ '/panel/rifas/' ~ rifa.id ~ '/editar' if editando else '/panel/rifas/nueva' }}" style="width:100%;max-width:880px" enctype="multipart/form-data">
+  {% if editando %}<div class="alerta aviso">La rifa está en borrador: puede cambiar todo. Si cambia la cantidad de boletas, RifaPlus vuelve a generar las boletas y sus cifras.</div>{% endif %}
+  {% if errores %}<div class="alerta error" role="alert"><ul>{% for e in errores %}<li>{{ e }}</li>{% endfor %}</ul></div>{% endif %}
+
+  <div class="campo"><label for="nombre">Nombre de la rifa</label>
+    <input id="nombre" name="nombre" type="text" required maxlength="150" data-validar="requerido texto" placeholder="Rifa juego de cocina 2026" value="{{ datos.nombre or '' }}"></div>
+  <div class="campo"><label for="premio_mayor">Premio mayor</label>
+    <input id="premio_mayor" name="premio_mayor" type="text" required maxlength="300" data-validar="requerido texto" placeholder="Juego de cocina completo" value="{{ datos.premio_mayor or '' }}">
+    <span class="ayuda">La ley no permite premios en dinero ni bienes usados.</span></div>
+  <div class="campo campo-foto"><label for="foto_mayor">Foto del premio mayor (opcional)</label>
+    <div class="foto-fila">
+      <img id="miniatura-mayor" class="miniatura" alt="" {% if datos.foto_mayor_actual %}src="/archivos/{{ datos.foto_mayor_actual }}"{% else %}hidden{% endif %}>
+      <input id="foto_mayor" name="foto_mayor" type="file" accept="image/jpeg,image/png,image/webp" data-miniatura="miniatura-mayor">
+      <input type="hidden" name="foto_mayor_actual" value="{{ datos.foto_mayor_actual or '' }}">
+      {% if datos.foto_mayor_actual %}<button type="button" class="enlace-boton quitar-foto">Quitar foto</button>{% endif %}
+    </div>
+    <span class="ayuda">Con foto, la boleta la muestra; sin foto, la boleta queda solo con texto. JPG, PNG o WEBP, máximo 5 MB.</span></div>
+  <div class="fila">
+    <div class="campo"><label for="loteria_id">Juega con</label>
+      <select id="loteria_id" name="loteria_id" required>
+        {% for l in loterias %}<option value="{{ l.id }}" {% if datos.loteria_id|string == l.id|string %}selected{% endif %}>{{ l.nombre }}{% if l.dias_sorteo %} ({{ l.dias_sorteo }}){% endif %}</option>{% endfor %}
+      </select></div>
+    <div class="campo"><label for="fecha_sorteo">Fecha del sorteo</label>
+      <input id="fecha_sorteo" name="fecha_sorteo" type="date" required data-validar="requerido" value="{{ datos.fecha_sorteo or '' }}"></div>
+  </div>
+
+  <hr class="separador">
+  <p class="grupo-titulo">¿Cuántas boletas va a vender?</p>
+  <p class="ayuda" style="margin-top:-.5rem">Escoja cuántas boletas vende y cuántas cifras trae cada una. La rifa usa todos los números del sorteo, así que caiga lo que caiga en la lotería, siempre hay un ganador.</p>
+  <div class="opciones-rifa" role="radiogroup">
+    {% for o in opciones %}
+    <label class="tarjeta-opcion">
+      {% set p = precios.get(o.plan_id, {}) %}
+      <input type="radio" name="opcion" value="{{ o.clave }}" data-boletas="{{ o.boletas }}" data-valor="{{ o.valor }}"
+             data-precios='{{ p|tojson }}' {% if datos.opcion == o.clave %}checked{% endif %} required>
+      <span class="to-boletas">{{ o.boletas|miles }} boletas</span>
+      <span class="to-detalle">{{ o.numeros_por_boleta }} cifra{{ 's' if o.numeros_por_boleta > 1 }} por boleta</span>
+      <span class="to-detalle">Números del sorteo: del {{ o.rango }}</span>
+      {% for d in duraciones %}{% set v = p.get(d.id) %}{% if v is not none %}
+      <span class="to-precio-duracion">{{ d.nombre }}: <b>{{ 'Gratis' if v == 0 else v|pesos }}</b></span>{% endif %}{% endfor %}
+    </label>
+    {% endfor %}
+  </div>
+
+  <div class="fila" style="margin-top:1.25rem">
+    <div class="campo"><label for="valor_boleta">Precio de cada boleta al público</label>
+      <input id="valor_boleta" name="valor_boleta" type="text" inputmode="numeric" class="campo-pesos" required placeholder="10.000" data-validar="requerido pesos" value="{{ datos.valor_boleta or '' }}"></div>
+    <div class="campo"><label for="valor_premio">Valor estimado del premio (opcional)</label>
+      <input id="valor_premio" name="valor_premio" type="text" inputmode="numeric" class="campo-pesos" placeholder="2.000.000" value="{{ datos.valor_premio or '' }}"></div>
+  </div>
+  <p class="grupo-titulo" style="margin-top:1.25rem">¿Por cuánto tiempo quiere la rifa?</p>
+  <p class="ayuda" style="margin-top:-.5rem">El tiempo cuenta desde que la rifa se publica. Si al terminar el período la rifa sigue, debe <b>renovar</b>; si no renueva, la rifa se bloquea hasta que pague.</p>
+  <div class="opciones-duracion" role="radiogroup">
+    {% for d in duraciones %}
+    <label class="opcion-duracion"><input type="radio" name="duracion_id" value="{{ d.id }}" data-meses="{{ d.meses }}" data-nombre="{{ d.nombre }}" required
+      {% if datos.duracion_id == d.id|string or (datos.duracion_meses and datos.duracion_meses == d.meses|string) or (not datos.duracion_id and not datos.duracion_meses and loop.first) %}checked{% endif %}>
+      <span><b>{{ d.nombre }}</b> <span class="precio-duracion" data-duracion="{{ d.id }}"></span></span></label>
+    {% endfor %}
+  </div>
+  <div id="resumen" class="vista-previa" aria-live="polite" hidden></div>
+
+  <hr class="separador">
+  <p class="grupo-titulo">Forma de pago de la boleta</p>
+  <p class="ayuda" style="margin-top:-.5rem">Usted decide en cuántas cuotas se paga y hasta cuándo. Para estar "al día", el comprador debe haber pagado las cuotas vencidas.</p>
+  {% set filas_cuotas = namespace(n=0) %}
+  {% for i in range(1, 13) %}{% if datos.get('cuota_valor_' ~ i) or datos.get('cuota_fecha_' ~ i) %}{% set filas_cuotas.n = i %}{% endif %}{% endfor %}
+  <div class="campo" style="max-width:260px"><label for="num_cuotas">Número de cuotas</label>
+    <select id="num_cuotas">
+      {% for n in range(1, 13) %}<option value="{{ n }}" {% if n == (filas_cuotas.n or 1) %}selected{% endif %}>{{ n }} cuota{{ 's' if n > 1 }}</option>{% endfor %}
+    </select></div>
+  <div class="tabla-envoltura"><table class="datos tabla-cuotas">
+    <thead><tr><th>Cuota</th><th>Valor</th><th>Pagar a más tardar el</th></tr></thead>
+    <tbody id="filas-cuotas">
+    {% for i in range(1, (filas_cuotas.n or 1) + 1) %}
+      <tr><td>{{ i }}</td>
+        <td><input type="text" inputmode="numeric" class="campo-pesos" data-validar="requerido pesos" name="cuota_valor_{{ i }}" value="{{ datos.get('cuota_valor_' ~ i, '') }}" aria-label="Valor de la cuota {{ i }}"></td>
+        <td><input type="date" data-validar="requerido" name="cuota_fecha_{{ i }}" value="{{ datos.get('cuota_fecha_' ~ i, '') }}" aria-label="Fecha límite de la cuota {{ i }}"></td></tr>
+    {% endfor %}
+    </tbody>
+  </table></div>
+  <p id="suma-cuotas" class="ayuda" aria-live="polite"></p>
+
+  <hr class="separador">
+  <p class="grupo-titulo">Premios secos (opcional)</p>
+  <p class="ayuda" style="margin-top:-.5rem">Premios adicionales que se juegan antes del premio mayor. Solo participan las boletas que estén al día ese día.</p>
+  <div id="filas-secos">
+    {% for i in range(1, 25) %}{% if datos.get('seco_descripcion_' ~ i) or datos.get('seco_fecha_juego_' ~ i) %}
+    <div class="fila-seco">
+      <div class="campo"><label>Premio</label><input type="text" name="seco_descripcion_{{ i }}" maxlength="300" value="{{ datos.get('seco_descripcion_' ~ i, '') }}"></div>
+      <div class="campo"><label>Lotería</label><select name="seco_loteria_id_{{ i }}">{% for l in loterias %}<option value="{{ l.id }}" {% if datos.get('seco_loteria_id_' ~ i) == l.id|string %}selected{% endif %}>{{ l.nombre }}</option>{% endfor %}</select></div>
+      <div class="campo"><label>Valor estimado</label><input type="text" inputmode="numeric" class="campo-pesos" name="seco_valor_estimado_{{ i }}" value="{{ datos.get('seco_valor_estimado_' ~ i, '') }}" placeholder="500.000"></div>
+      <div class="campo"><label>Fecha</label><input type="date" name="seco_fecha_juego_{{ i }}" value="{{ datos.get('seco_fecha_juego_' ~ i, '') }}"></div>
+      <div class="campo campo-foto"><label>Foto</label>
+        <div class="foto-fila"><img class="miniatura" alt="" {% if datos.get('seco_foto_actual_' ~ i) %}src="/archivos/{{ datos.get('seco_foto_actual_' ~ i) }}"{% else %}hidden{% endif %}>
+        <input type="file" name="seco_foto_{{ i }}" accept="image/jpeg,image/png,image/webp">
+        <input type="hidden" name="seco_foto_actual_{{ i }}" value="{{ datos.get('seco_foto_actual_' ~ i, '') }}"></div></div>
+      <button type="button" class="enlace-boton quitar-seco">Quitar</button>
+    </div>
+    {% endif %}{% endfor %}
+  </div>
+  <button type="button" class="boton secundario" id="agregar-seco">+ Agregar premio seco</button>
+  <template id="plantilla-seco">
+    <div class="fila-seco">
+      <div class="campo"><label>Premio</label><input type="text" name="seco_descripcion_N" maxlength="300" placeholder="Licuadora"></div>
+      <div class="campo"><label>Lotería</label><select name="seco_loteria_id_N">{% for l in loterias %}<option value="{{ l.id }}">{{ l.nombre }}</option>{% endfor %}</select></div>
+      <div class="campo"><label>Valor estimado</label><input type="text" inputmode="numeric" class="campo-pesos" name="seco_valor_estimado_N" placeholder="500.000"></div>
+      <div class="campo"><label>Fecha</label><input type="date" name="seco_fecha_juego_N"></div>
+      <div class="campo campo-foto"><label>Foto</label>
+        <div class="foto-fila"><img class="miniatura" alt="" hidden>
+        <input type="file" name="seco_foto_N" accept="image/jpeg,image/png,image/webp">
+        <input type="hidden" name="seco_foto_actual_N" value=""></div></div>
+      <button type="button" class="enlace-boton quitar-seco">Quitar</button>
+    </div>
+  </template>
+
+  <hr class="separador">
+  <p class="grupo-titulo">Reglas si el ganador no está al día</p>
+  <div class="fila">
+    <div class="campo"><label for="regla_seco_atrasado">Si un premio seco cae en una boleta atrasada</label>
+      <select id="regla_seco_atrasado" name="regla_seco_atrasado">
+        {% for k, t in reglas_seco.items() %}<option value="{{ k }}" {% if datos.regla_seco_atrasado == k %}selected{% endif %}>{{ t }}</option>{% endfor %}
+      </select></div>
+    <div class="campo"><label for="regla_mayor_sin_pagar">Si el premio mayor cae en una boleta sin pagar completa</label>
+      <select id="regla_mayor_sin_pagar" name="regla_mayor_sin_pagar">
+        {% for k, t in reglas_mayor.items() %}<option value="{{ k }}" {% if datos.regla_mayor_sin_pagar == k %}selected{% endif %}>{{ t }}</option>{% endfor %}
+      </select></div>
+  </div>
+
+  <hr class="separador">
+  <div class="campo"><label for="descripcion">Descripción (opcional)</label>
+    <textarea id="descripcion" name="descripcion" rows="3">{{ datos.descripcion or '' }}</textarea></div>
+
+  <hr class="separador">
+  {% include "componentes/boleta_vista_previa.html" %}
+
+  {% if not editando %}
+  <label class="casilla declaracion"><input type="checkbox" name="acepta_declaracion" value="true" {% if datos.acepta_declaracion == 'true' %}checked{% endif %} required>
+    <span><b>Declaración del organizador.</b> {{ declaracion }} <a href="/terminos" target="_blank" rel="noopener">Ver términos y condiciones</a>.</span></label>
+  {% endif %}
+  <button class="boton grande" type="submit">{{ "Guardar cambios" if editando else "Crear rifa y generar boletas" }}</button>
+</form>
+<script src="/estaticos/js/nueva-rifa.js?v={{ v }}" defer></script>
+{% endblock %}

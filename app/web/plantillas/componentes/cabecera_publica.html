@@ -1,0 +1,19 @@
+{# Cabecera de las páginas públicas: logo y menú (Cómo funciona, Precios, Verificar, Ingresar / Registrarme). #}
+<header class="cabecera">
+  <div class="contenedor">
+    <a class="logo" href="/"><img src="/estaticos/img/rifaplus-solo-nombre.svg" alt="RifaPlus"></a>
+    <button type="button" class="boton-menu" aria-expanded="false" aria-label="Abrir el menú">☰ Menú</button>
+    <nav>
+      <a class="ocultable" href="/#como-funciona">Cómo funciona</a>
+      <a class="ocultable" href="/#precios">Precios</a>
+      <a class="ocultable" href="/verificar">Verificar boleta</a>
+      {% if usuario %}
+        {% if usuario.rol == 'superadmin' %}<a class="boton" href="/admin">Ir al superadministrador</a>
+        {% else %}<a class="boton" href="/panel">Ir a mi panel</a>{% endif %}
+      {% else %}
+        <a href="/ingresar">Ingresar</a>
+        <a class="boton" href="/registro">Registrarme gratis</a>
+      {% endif %}
+    </nav>
+  </div>
+</header>

@@ -1,0 +1,7 @@
+{# Datos del responsable de RifaPlus, tomados del .env (RESPONSABLE_NOMBRE, RESPONSABLE_DOCUMENTO,
+   RESPONSABLE_CIUDAD, CORREO_CONTACTO). Si falta alguno, se ve "[por completar]" para no publicar datos vacíos. #}
+{% macro dato(valor, nombre) %}{% if valor %}{{ valor }}{% else %}<mark>[{{ nombre }} por completar]</mark>{% endif %}{% endmacro %}
+{% set responsable = dato(config.responsable_nombre, 'nombre del responsable') %}
+{% set documento = dato(config.responsable_documento, 'cédula o NIT') %}
+{% set ciudad = dato(config.responsable_ciudad, 'ciudad') %}
+{% set contacto = dato(config.correo_contacto, 'correo de contacto') %}

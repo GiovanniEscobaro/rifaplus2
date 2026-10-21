@@ -1,0 +1,17 @@
+# Lo que NO entra en la imagen de Docker
+.env
+.env.*
+!.env.example
+venv/
+.venv/
+__pycache__/
+*.pyc
+.git/
+.gitignore
+.pytest_cache/
+.ruff_cache/
+uploads/
+tests/
+docs/*.pdf
+*.zip
+.DS_Store

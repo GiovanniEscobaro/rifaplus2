@@ -1,0 +1,24 @@
+{# Loterías (GET/POST /admin/loterias): las que pueden escoger los organizadores para sus rifas. #}
+{% extends "admin/base_admin.html" %}
+{% block titulo %}Loterías · Superadministrador{% endblock %}
+{% block contenido %}
+<div class="encabezado-pagina"><div><h1 style="font-size:1.8rem">Loterías</h1>
+  <p class="muted">Las loterías activas aparecen al crear una rifa. Desactivar una no afecta las rifas que ya la usan.</p></div></div>
+<section class="tarjeta" style="width:100%;max-width:none">
+  {% for l in loterias %}
+  <form method="post" action="/admin/loterias/{{ l.id }}" class="fila-plan">
+    <div class="campo" style="flex:2"><label>Nombre</label><input name="nombre" type="text" maxlength="100" value="{{ l.nombre }}" required></div>
+    <div class="campo"><label>Días de sorteo</label><input name="dias" type="text" maxlength="50" value="{{ l.dias_sorteo or '' }}" placeholder="Lunes"></div>
+    <label class="casilla" style="margin-bottom:1rem"><input type="checkbox" name="activa" value="true" {% if l.activa %}checked{% endif %}> Activa</label>
+    <button class="boton secundario" type="submit">Guardar</button>
+  </form>
+  {% endfor %}
+  <h2 style="font-size:1.1rem;margin-top:1.5rem">Agregar lotería</h2>
+  <form method="post" action="/admin/loterias" class="fila-plan">
+    <div class="campo" style="flex:2"><label>Nombre</label><input name="nombre" type="text" maxlength="100" required placeholder="Lotería de …"></div>
+    <div class="campo"><label>Días de sorteo</label><input name="dias" type="text" maxlength="50" placeholder="Martes"></div>
+    <input type="hidden" name="activa" value="true">
+    <button class="boton" type="submit">Agregar</button>
+  </form>
+</section>
+{% endblock %}

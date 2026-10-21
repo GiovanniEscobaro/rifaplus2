@@ -1,0 +1,19 @@
+{# Lista de organizadores con búsqueda y filtro (GET /admin/organizadores). #}
+{% extends "admin/base_admin.html" %}
+{% block titulo %}Organizadores · Superadministrador{% endblock %}
+{% block contenido %}
+<div class="encabezado-pagina" style="align-items:center">
+  <h1 style="font-size:1.8rem;margin:0">Organizadores</h1>
+  <form method="get" action="/admin/organizadores" class="buscador">
+    <input type="text" name="buscar" value="{{ buscar }}" placeholder="Nombre, correo, celular o documento" aria-label="Buscar organizadores">
+    <select name="estado" aria-label="Estado">
+      <option value="">Todos</option>
+      {% for e in ['activo', 'pendiente', 'suspendido'] %}<option value="{{ e }}" {% if estado == e %}selected{% endif %}>{{ e|capitalize }}</option>{% endfor %}
+      <option value="por_verificar" {% if estado == 'por_verificar' %}selected{% endif %}>Por verificar</option>
+      <option value="verificado" {% if estado == 'verificado' %}selected{% endif %}>Verificados</option>
+    </select>
+    <button class="boton secundario" type="submit">Buscar</button>
+  </form>
+</div>
+{% include "admin/_tabla_organizadores.html" %}
+{% endblock %}

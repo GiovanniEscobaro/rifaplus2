@@ -1,0 +1,14 @@
+{# Lista de premios de una rifa (mayor y secos) con foto, lotería, fecha, valor y resultado si ya jugó. Recibe "rifa". #}
+<ul class="lista-premios">
+  {% for p in rifa.premios|sort(attribute='orden') %}
+  <li class="{{ p.tipo }}">
+    {% if p.foto_url %}<img class="miniatura" src="/archivos/{{ p.foto_url }}" alt="Foto de {{ p.descripcion }}">{% endif %}
+    <div>
+      <span class="tipo-premio">{{ 'Premio mayor' if p.tipo == 'mayor' else 'Premio seco' }}</span>
+      <b>{{ p.descripcion }}</b>{% if p.valor_estimado %} · {{ p.valor_estimado|pesos }}{% endif %}
+      <span class="muted chico">{{ p.nombre_loteria }} · {{ p.fecha|fecha_larga }}</span>
+      {% if p.resultado %}<span class="chico">Cayó el {{ p.resultado.numero_loteria }} (juega el {{ p.resultado.numero_jugado }})</span>{% endif %}
+    </div>
+  </li>
+  {% endfor %}
+</ul>

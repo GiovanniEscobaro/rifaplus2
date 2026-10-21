@@ -1,0 +1,60 @@
+{# Informes de ventas (GET /panel/informes): filtros por rifa, vendedor, ciudad, comprador y estado; totales y descarga CSV. #}
+{% extends "panel/base_panel.html" %}
+{% set seccion = 'informes' %}
+{% block titulo %}Informes · RifaPlus{% endblock %}
+{% block contenido %}
+<div class="encabezado-pagina"><div><h1 style="font-size:1.8rem">Informes</h1>
+  <p class="muted">Busque boletas vendidas por comprador, vendedor, ciudad o rifa, y vea cuánto se ha recaudado y cuánto falta.</p></div></div>
+
+<form method="get" action="/panel/informes" class="tarjeta filtros-informe" style="width:100%;max-width:none">
+  <div class="campo"><label for="comprador">Comprador (cédula o nombre)</label>
+    <input id="comprador" name="comprador" type="text" value="{{ f.comprador }}" placeholder="1045… o Pepito"></div>
+  <div class="campo"><label for="vendedor">Vendedor</label>
+    <select id="vendedor" name="vendedor">
+      <option value="">Todos</option>
+      <option value="organizador" {% if f.vendedor == 'organizador' %}selected{% endif %}>Vendidas por mí</option>
+      {% for v in vendedores %}<option value="{{ v.id }}" {% if f.vendedor == v.id|string %}selected{% endif %}>{{ v.nombre }}</option>{% endfor %}
+    </select></div>
+  <div class="campo"><label for="ciudad">Ciudad del comprador</label>
+    <input id="ciudad" name="ciudad" type="text" value="{{ f.ciudad }}" placeholder="Soledad"></div>
+  <div class="campo"><label for="rifa">Rifa</label>
+    <select id="rifa" name="rifa">
+      <option value="">Todas</option>
+      {% for r in rifas %}<option value="{{ r.id }}" {% if f.rifa_id == r.id %}selected{% endif %}>{{ r.nombre }}</option>{% endfor %}
+    </select></div>
+  <div class="campo"><label for="estado">Estado de pago</label>
+    <select id="estado" name="estado">
+      {% for k, t in estados.items() %}<option value="{{ k }}" {% if f.estado == k %}selected{% endif %}>{{ t }}</option>{% endfor %}
+    </select></div>
+  <div class="campo" style="justify-content:flex-end"><button class="boton" type="submit">Ver informe</button></div>
+</form>
+
+{% if informe is none %}
+  <div class="vacio"><p class="muted">Escoja los filtros que quiera y toque "Ver informe". Sin filtros, muestra todas las boletas vendidas.</p></div>
+{% elif not informe.filas %}
+  <div class="vacio"><p class="muted">No hay boletas vendidas con esos filtros.</p></div>
+{% else %}
+  <div class="cifras" style="margin-top:1.5rem">
+    <div class="cifra"><strong>{{ informe.filas|length|miles }}</strong><span>boletas</span></div>
+    <div class="cifra"><strong>{{ informe.total_recaudado|pesos }}</strong><span>recaudado</span></div>
+    <div class="cifra"><strong>{{ informe.total_por_cobrar|pesos }}</strong><span>por cobrar</span></div>
+    <a class="cifra" href="/panel/informes.csv?{{ consulta }}"><strong>⬇ Excel</strong><span>descargar este informe (CSV)</span></a>
+  </div>
+  <div class="tabla-envoltura">
+    <table class="datos">
+      <thead><tr><th>Rifa</th><th>Boleta</th><th>Comprador</th><th>Ciudad</th><th>Vendedor</th><th>Pagado</th><th>Debe</th><th>Estado</th></tr></thead>
+      <tbody>
+      {% for x in informe.filas[:max_filas] %}{% set b = x.boleta %}
+        <tr><td>{{ b.rifa.nombre }}</td>
+          <td><a href="/panel/rifas/{{ b.rifa_id }}/boletas/{{ b.id }}">Boleta {{ b.etiqueta }}</a></td>
+          <td><b>{{ b.cliente.nombre }}</b><br><span class="muted chico">{{ b.cliente.tipo_documento }} {{ b.cliente.numero_documento }} · {{ b.cliente.celular }}</span></td>
+          <td>{{ b.cliente.ciudad }}</td><td>{{ b.vendedor.nombre if b.vendedor else 'Organizador' }}</td>
+          <td>{{ x.pagado|pesos }}</td><td>{{ x.debe|pesos }}</td>
+          <td><span class="estado {{ 'aprobado' if x.estado == 'Pagada' else ('anulada' if x.estado == 'Atrasada' else 'pendiente') }}">{{ x.estado }}</span></td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% if informe.filas|length > max_filas %}<p class="muted chico">Se muestran las primeras {{ max_filas }} boletas; la descarga en Excel trae todas.</p>{% endif %}
+{% endif %}
+{% endblock %}

@@ -1,0 +1,23 @@
+{# Registros de una tabla (GET /admin/datos/{tabla}): búsqueda, páginas y descarga CSV. Solo lectura. #}
+{% extends "admin/base_admin.html" %}
+{% block titulo %}{{ tabla }} · Base de datos{% endblock %}
+{% block contenido %}
+<p><a href="/admin/datos">← Base de datos</a></p>
+<div class="encabezado-pagina" style="align-items:center">
+  <div><h1 style="font-size:1.6rem;margin:0">{{ tabla }}</h1><p class="muted chico" style="margin:0">{{ r.total|miles }} registro{{ 's' if r.total != 1 }}{% if buscar %} con «{{ buscar }}»{% endif %}</p></div>
+  <form method="get" action="/admin/datos/{{ tabla }}" class="buscador">
+    <input type="text" name="buscar" value="{{ buscar }}" placeholder="Buscar en todas las columnas" aria-label="Buscar">
+    <button class="boton secundario" type="submit">Buscar</button>
+    <a class="boton secundario" href="/admin/datos/{{ tabla }}.csv{% if buscar %}?buscar={{ buscar|urlencode }}{% endif %}">⬇ Excel</a>
+  </form>
+</div>
+{% include "admin/_resultado.html" %}
+{% if r.paginas > 1 %}
+<nav class="paginacion" aria-label="Páginas">
+  {% set q = '&buscar=' ~ buscar|urlencode if buscar else '' %}
+  {% if r.pagina > 1 %}<a href="?pagina={{ r.pagina - 1 }}{{ q }}">Anterior</a>{% endif %}
+  <span>Página {{ r.pagina }} de {{ r.paginas|miles }}</span>
+  {% if r.pagina < r.paginas %}<a href="?pagina={{ r.pagina + 1 }}{{ q }}">Siguiente</a>{% endif %}
+</nav>
+{% endif %}
+{% endblock %}

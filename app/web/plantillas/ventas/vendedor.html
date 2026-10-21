@@ -1,0 +1,120 @@
+{# Liquidación de un vendedor (GET /panel/vendedores/{id}): comisión por rifa, pagos hechos, saldo y formulario para pagarle. #}
+{% extends "panel/base_panel.html" %}
+{% set seccion = 'vendedores' %}
+{% set v = l.vendedor %}
+{% block titulo %}{{ v.nombre }} · Vendedores{% endblock %}
+{% block contenido %}
+<p><a href="/panel/vendedores">← Vendedores</a></p>
+{% if aviso == 'pagado' %}<div class="alerta ok">Pago registrado.{% if not l.saldo %} El vendedor quedó a paz y salvo.{% endif %}</div>
+{% elif aviso == 'entrega' %}<div class="alerta ok">Entrega registrada.</div>
+{% elif aviso == 'guardado' %}<div class="alerta ok">Cambios guardados.</div>{% endif %}
+{% if errores %}<div class="alerta error" role="alert"><ul>{% for e in errores %}<li>{{ e }}</li>{% endfor %}</ul></div>{% endif %}
+
+<div class="encabezado-pagina">
+  <div><h1 style="font-size:1.8rem">{{ v.nombre }}</h1>
+    <p class="muted">{{ v.tipo_documento }} {{ v.numero_documento }} · Cel. {{ v.celular }}{% if v.ciudad %} · {{ v.ciudad }}{% endif %}</p></div>
+  {% if l.saldo %}<span class="estado pendiente">Le debe {{ l.saldo|pesos }}</span>{% else %}<span class="estado aprobado">A paz y salvo</span>{% endif %}
+</div>
+
+<div class="cifras">
+  <div class="cifra"><strong>{{ l.recaudado|pesos }}</strong><span>recaudado en sus boletas</span></div>
+  <div class="cifra"><strong>{{ '%g'|format(v.comision_porcentaje|float) }} %</strong><span>comisión</span></div>
+  <div class="cifra"><strong>{{ l.comision|pesos }}</strong><span>comisión ganada</span></div>
+  <div class="cifra"><strong>{{ l.pagado|pesos }}</strong><span>ya pagado</span></div>
+  <div class="cifra"><strong>{{ l.saldo|pesos }}</strong><span>por pagar</span></div>
+</div>
+
+{% set total_efectivo = efectivo|sum(attribute='cobrado') %}
+{% set total_entregado = efectivo|sum(attribute='entregado') %}
+{% set total_por_entregar = efectivo|sum(attribute='por_entregar') %}
+<section class="tarjeta" style="width:100%;max-width:none;margin-bottom:1.25rem">
+  <h2 style="font-size:1.2rem">Efectivo que cobró y le debe entregar</h2>
+  <p class="muted chico">Solo cuenta el efectivo: lo que los compradores pagan por llave Bre-B, Nequi, Daviplata o transferencia le llega directo a su cuenta.</p>
+  <div class="cifras" style="margin-bottom:1rem">
+    <div class="cifra"><strong>{{ total_efectivo|pesos }}</strong><span>cobró en efectivo</span></div>
+    <div class="cifra"><strong>{{ total_entregado|pesos }}</strong><span>ya le entregó</span></div>
+    <div class="cifra"><strong>{{ total_por_entregar|pesos }}</strong><span>tiene por entregar</span></div>
+  </div>
+  {% if total_por_entregar %}
+  <form method="post" action="/panel/vendedores/{{ v.id }}/entregas" class="fila-3" style="align-items:end">
+    <div class="campo"><label for="e_rifa">Rifa</label>
+      <select id="e_rifa" name="rifa_id" data-validar="seleccion">
+        {% for x in efectivo if x.por_entregar %}<option value="{{ x.rifa.id }}" {% if datos.rifa_id == x.rifa.id|string %}selected{% endif %}>{{ x.rifa.nombre }} · tiene {{ x.por_entregar|pesos }}</option>{% endfor %}
+      </select></div>
+    <div class="campo"><label for="e_monto">Valor que le entregó</label>
+      <input id="e_monto" name="monto" type="text" inputmode="numeric" class="campo-pesos" data-validar="requerido pesos" value="{{ datos.monto or (efectivo|selectattr('por_entregar')|first).por_entregar|miles }}"></div>
+    <div class="campo"><label for="e_medio">¿Cómo se lo entregó?</label>
+      <select id="e_medio" name="medio_pago_id" data-validar="seleccion">
+        {% for m in medios_entrega %}<option value="{{ m.id }}" {% if m.codigo == 'efectivo' %}selected{% endif %}>{{ m.nombre }}</option>{% endfor %}
+      </select></div>
+    <div class="campo" style="grid-column:1/-1"><label for="e_obs">Observación (opcional)</label>
+      <input id="e_obs" name="observacion" type="text" maxlength="300"></div>
+    <div><button class="boton" type="submit">Registrar entrega</button></div>
+  </form>
+  {% endif %}
+  {% if entregas %}
+  <div class="tabla-envoltura" style="margin-top:1rem"><table class="datos">
+    <thead><tr><th>Fecha</th><th>Rifa</th><th>Valor</th><th>Cómo</th><th>Observación</th></tr></thead>
+    <tbody>{% for e in entregas %}<tr><td>{{ e.fecha|fecha_larga }}</td><td>{{ e.rifa.nombre }}</td><td>{{ e.monto|pesos }}</td><td>{{ e.medio_pago.nombre }}</td><td>{{ e.observacion or '—' }}</td></tr>{% endfor %}</tbody>
+  </table></div>
+  {% endif %}
+</section>
+
+<div class="dos-columnas">
+  <section class="tarjeta" style="width:100%;max-width:none">
+    <h2 style="font-size:1.2rem">Pagarle la comisión</h2>
+    {% if v.llave_bre_b %}
+    <div class="llave-pago"><span class="tipo-premio">Páguele a su llave Bre-B</span><b>{{ v.llave_bre_b }}</b><span class="muted chico">A nombre de {{ v.nombre }}</span></div>
+    {% else %}
+    <div class="alerta aviso">Este vendedor no tiene llave Bre-B. Agréguela abajo, en «Datos del vendedor», para saber a dónde pagarle.</div>
+    {% endif %}
+    {% if l.saldo %}
+    <form method="post" action="/panel/vendedores/{{ v.id }}/pagos">
+      <div class="campo"><label for="monto">Valor que le paga</label>
+        <input id="monto" name="monto" type="text" inputmode="numeric" class="campo-pesos" data-validar="requerido pesos" value="{{ datos.monto or l.saldo|miles }}">
+        <span class="ayuda">Por defecto, todo lo que se le debe ({{ l.saldo|pesos }}).</span></div>
+      <div class="campo"><label for="medio">¿Cómo le pagó?</label>
+        <select id="medio" name="medio_pago_id" data-validar="seleccion">
+          <option value="">Escoja…</option>
+          {% for m in medios %}<option value="{{ m.id }}" {% if datos.medio_pago_id == m.id|string %}selected{% endif %}>{{ m.nombre }}</option>{% endfor %}
+        </select></div>
+      <div class="campo"><label for="referencia">Referencia (opcional)</label>
+        <input id="referencia" name="referencia" type="text" maxlength="100" value="{{ datos.referencia or '' }}"></div>
+      <div class="campo"><label for="observacion">Observación (opcional)</label>
+        <input id="observacion" name="observacion" type="text" maxlength="300" value="{{ datos.observacion or '' }}"></div>
+      <button class="boton" type="submit">Registrar pago</button>
+    </form>
+    {% else %}<p class="muted">No hay comisión pendiente por pagar.</p>{% endif %}
+
+    <hr class="separador">
+    <form method="post" action="/panel/vendedores/{{ v.id }}">
+      <h3>Datos del vendedor</h3>
+      <div class="campo"><label for="comision_porcentaje">Comisión (%)</label>
+        <input id="comision_porcentaje" name="comision_porcentaje" type="number" min="0" max="100" step="0.5" value="{{ '%g'|format(v.comision_porcentaje|float) }}">
+        <span class="ayuda">Si la cambia, la comisión ganada se recalcula con el nuevo porcentaje.</span></div>
+      <div class="campo"><label for="llave_bre_b">Llave Bre-B</label>
+        <input id="llave_bre_b" name="llave_bre_b" type="text" required maxlength="60" data-validar="requerido texto" value="{{ v.llave_bre_b or '' }}" placeholder="Celular, cédula, correo o alias"></div>
+      <label class="casilla"><input type="checkbox" name="activo" value="true" {% if v.activo %}checked{% endif %}> Vendedor activo (aparece al vender boletas)</label>
+      <button class="boton secundario" type="submit">Guardar</button>
+    </form>
+  </section>
+
+  <section class="tarjeta" style="width:100%;max-width:none">
+    <h2 style="font-size:1.2rem">Comisión por rifa</h2>
+    {% if l.lineas %}
+    <div class="tabla-envoltura"><table class="datos">
+      <thead><tr><th>Rifa</th><th>Boletas</th><th>Recaudado</th><th>Comisión</th></tr></thead>
+      <tbody>{% for x in l.lineas %}<tr><td>{{ x.rifa.nombre }}</td><td>{{ x.vendidas|miles }}</td><td>{{ x.recaudado|pesos }}</td><td>{{ x.comision|pesos }}</td></tr>{% endfor %}</tbody>
+    </table></div>
+    {% else %}<p class="muted">Todavía no ha vendido boletas.</p>{% endif %}
+
+    <h2 style="font-size:1.2rem;margin-top:1.5rem">Pagos hechos</h2>
+    {% if pagos %}
+    <div class="tabla-envoltura"><table class="datos">
+      <thead><tr><th>Fecha</th><th>Valor</th><th>Medio</th><th>Referencia</th><th>Observación</th></tr></thead>
+      <tbody>{% for p in pagos %}<tr><td>{{ p.fecha|fecha_larga }}</td><td>{{ p.monto|pesos }}</td><td>{{ p.medio_pago.nombre }}</td><td>{{ p.referencia or '—' }}</td><td>{{ p.observacion or '—' }}</td></tr>{% endfor %}</tbody>
+    </table></div>
+    {% else %}<p class="muted">Todavía no se le ha pagado.</p>{% endif %}
+  </section>
+</div>
+{% endblock %}

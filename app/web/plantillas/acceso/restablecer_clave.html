@@ -1,0 +1,23 @@
+{# Crear clave nueva desde el enlace del correo (GET/POST /restablecer-clave/{token}). #}
+{% extends "base.html" %}
+{% block titulo %}Clave nueva · RifaPlus{% endblock %}
+{% block cuerpo %}
+{% include "componentes/cabecera_publica.html" %}
+<main class="pagina-form">
+  <form class="tarjeta" method="post" action="/restablecer-clave/{{ token }}">
+    <h1 style="font-size:1.8rem">Cree su clave nueva</h1>
+    {% if not valido %}
+      <div class="alerta error">Este enlace ya se usó o venció.</div>
+      <a class="boton" href="/recuperar-clave">Pedir un enlace nuevo</a>
+    {% else %}
+      {% if error %}<div class="alerta error" role="alert">{{ error }}</div>{% endif %}
+      <div class="campo"><label for="clave_nueva">Clave nueva</label>
+        <input id="clave_nueva" name="clave_nueva" type="password" required minlength="8" autocomplete="new-password">
+        <span class="ayuda">Mínimo 8 caracteres, con letras y números.</span></div>
+      <div class="campo"><label for="confirmacion">Confirme la clave nueva</label>
+        <input id="confirmacion" name="confirmacion" type="password" required minlength="8" autocomplete="new-password"></div>
+      <button class="boton grande" type="submit" style="width:100%">Guardar clave</button>
+    {% endif %}
+  </form>
+</main>
+{% endblock %}

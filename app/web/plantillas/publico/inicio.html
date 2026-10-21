@@ -1,0 +1,107 @@
+{# Página de inicio de RifaPlus (ruta GET /). Explica el producto y muestra los planes de la tabla 'planes'. #}
+{% extends "base.html" %}
+{% block titulo %}RifaPlus · Organice sus rifas sin cuadernos ni hojas de cálculo{% endblock %}
+{% block cuerpo %}
+{% include "componentes/cabecera_publica.html" %}
+<main>
+  <section class="heroe">
+    <div class="contenedor">
+      <div>
+        <h1>Sus rifas organizadas, de la primera boleta al ganador.</h1>
+        <p class="entrada">RifaPlus genera las boletas con sus números, lleva los abonos de cada comprador, avisa por WhatsApp cuando una boleta queda pagada y encuentra al ganador con el resultado de la lotería.</p>
+        <div class="acciones">
+          <a class="boton grande" href="/registro">Crear mi cuenta gratis</a>
+          <a class="boton grande secundario" href="#como-funciona">Ver cómo funciona</a>
+        </div>
+        <p class="muted chico" style="margin-top:1rem">Rifas de hasta 10 boletas sin costo. No pedimos tarjeta.</p>
+      </div>
+      <div class="boleta" aria-label="Ejemplo de boleta de RifaPlus">
+        <div class="boleta-cuerpo">
+          <div class="titulo">Rifa Moto 2026</div>
+          <div class="muted chico">Boleta N.° 15 · Lotería de Boyacá</div>
+          <div class="boleta-numeros"><span>07</span><span>32</span><span>58</span><span>91</span></div>
+          <div class="chico">Juega el sábado 14 de noviembre</div>
+          <div class="chico" style="color:var(--ok);font-weight:600">Pagada</div>
+        </div>
+        <div class="boleta-talon">
+          <div class="qr" aria-hidden="true"></div>
+          <span>K7MP-Q2XA</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="seccion" id="como-funciona">
+    <div class="contenedor">
+      <h2>Cómo funciona</h2>
+      <p class="muted">Su rifa juega con el resultado de una lotería oficial. Si cualquiera de los números de una boleta coincide con las últimas cifras del premio mayor, esa boleta gana.</p>
+      <ol class="pasos">
+        <li><h3>Cree la rifa</h3><p class="muted">Escoja la lotería, la fecha, cuántos números tendrá y cuántos trae cada boleta.</p></li>
+        <li><h3>RifaPlus arma las boletas</h3><p class="muted">Reparte los números al azar, sin repetir, y le da a cada boleta un código para verificarla.</p></li>
+        <li><h3>Venda y registre abonos</h3><p class="muted">Usted o sus vendedores anotan cada pago (llave Bre-B, Nequi, Daviplata o efectivo), con su comprobante.</p></li>
+        <li><h3>Encuentre al ganador</h3><p class="muted">Escriba el resultado de la lotería y RifaPlus le dice qué boleta ganó y de quién es.</p></li>
+      </ol>
+      <blockquote class="versiculo-seccion">
+        <p>«Y todo lo que hagáis, hacedlo de corazón, como para el Señor y no para los hombres.»</p>
+        <cite>Colosenses 3:23</cite>
+      </blockquote>
+    </div>
+  </section>
+
+  <section class="seccion" style="background:var(--fondo)">
+    <div class="contenedor">
+      <h2>Lo que resuelve</h2>
+      <div class="ventajas">
+        <div><h3>Ningún número repetido</h3><p class="muted">La base de datos impide que dos boletas de la misma rifa tengan el mismo número.</p></div>
+        <div><h3>Cuentas claras</h3><p class="muted">Cada abono queda con su comprobante y quién lo verificó. Sabe al instante quién debe y quién ya pagó.</p></div>
+        <div><h3>Avisos por WhatsApp</h3><p class="muted">Cuando una boleta queda paga, el comprador recibe su número de boleta y la fecha del sorteo.</p></div>
+        <div><h3>Boletas que no se falsifican</h3><p class="muted">Cualquiera puede escribir el código de su boleta en esta página y comprobar que es auténtica.</p></div>
+        <div><h3>Control de vendedores</h3><p class="muted">Vea qué boletas tiene cada vendedor, cuánto ha vendido y cuánto le ha entregado.</p></div>
+        <div><h3>Desde el celular</h3><p class="muted">Funciona en cualquier navegador. No hay que instalar nada.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="seccion" id="precios">
+    <div class="contenedor">
+      <h2>Precios</h2>
+      <p class="muted">Se paga por cada rifa según cuántas boletas vende, cuántas cifras trae cada una y por cuánto tiempo la quiere. Si la rifa sigue después de ese tiempo, se renueva.</p>
+      <div class="tabla-envoltura" style="max-width:760px;margin-top:1rem">
+      <table class="precios">
+        <thead><tr><th>Boletas que vende</th><th>Cifras por boleta</th><th>Números del sorteo</th>{% for d in duraciones %}<th>{{ d.nombre }}</th>{% endfor %}</tr></thead>
+        <tbody>
+        {% for plan in planes if plan.boletas_min == plan.boletas_max %}
+          {% set digitos = ((plan.boletas_min * plan.numeros_min)|string|length) - 1 %}
+          <tr><td>{{ plan.boletas_min|miles }}</td><td>{{ plan.numeros_min }}</td>
+              <td>del {{ '0' * digitos }} al {{ '9' * digitos }}</td>
+              {% for d in duraciones %}{% set v = precios.get(plan.id, {}).get(d.id) %}
+              <td class="valor">{% if v is none %}—{% elif v == 0 %}Gratis{% else %}{{ v|pesos }}{% endif %}</td>{% endfor %}</tr>
+        {% endfor %}
+        </tbody>
+      </table>
+      </div>
+      <p class="muted chico" style="margin-top:1rem">Pago con llave Bre-B.</p>
+    </div>
+  </section>
+
+  <section class="seccion" style="background:var(--fondo)" id="responsabilidad">
+    <div class="contenedor">
+      <h2>Administramos rifas, no rifamos</h2>
+      <p class="muted" style="max-width:46rem">RifaPlus es el software con el que cada organizador lleva su rifa. Por eso:</p>
+      <div class="ventajas">
+        <div><h3>El dinero es del organizador</h3><p class="muted">Los compradores le pagan directo al organizador, por llave Bre-B, Nequi, Daviplata o en efectivo. RifaPlus no recibe ese dinero.</p></div>
+        <div><h3>El sorteo es de la lotería</h3><p class="muted">Gana el número de una lotería oficial. RifaPlus no hace sorteos.</p></div>
+        <div><h3>El responsable es el organizador</h3><p class="muted">La autorización de la rifa y la entrega de los premios están a cargo de quien organiza. Su nombre aparece en cada boleta.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="franja">
+    <div class="contenedor">
+      <h2>Haga su primera rifa hoy, sin costo.</h2>
+      <a class="boton grande" href="/registro">Crear mi cuenta gratis</a>
+    </div>
+  </section>
+</main>
+{% include "componentes/pie_publico.html" %}
+{% endblock %}

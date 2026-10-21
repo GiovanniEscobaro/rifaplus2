@@ -1,0 +1,43 @@
+{# Vista previa de la boleta en el formulario de rifa: mismo diseño que la boleta real, con espacios de ejemplo
+   para los números y el comprador. La llena nueva-rifa.js mientras el organizador escribe. Recibe "usuario". #}
+<section class="vista-previa-boleta" aria-labelledby="titulo-previa">
+  <h2 id="titulo-previa" style="font-size:1.2rem">Así se verá la boleta</h2>
+  <p class="ayuda" style="margin-top:-.4rem">Los números, el comprador, los pagos y el código son de ejemplo: cada boleta tendrá los suyos.</p>
+  <article class="boleta-ind boleta-previa">
+    <section class="bi-cuerpo">
+      <header class="bi-cabecera">
+        <div>
+          <p class="bi-organiza">{{ usuario.organizador.nombre }} presenta</p>
+          <h1 class="bi-rifa" data-previa="nombre">Nombre de la rifa</h1>
+        </div>
+        <div class="bi-numero-boleta"><span>Boleta</span><strong data-previa="etiqueta">1</strong></div>
+      </header>
+      <div class="bi-premio-mayor" data-previa="bloque-mayor">
+        <img class="bi-foto-mayor" data-previa="foto-mayor" alt="" hidden>
+        <div>
+          <span class="bi-etiqueta">Premio mayor</span>
+          <p class="bi-premio-nombre" data-previa="premio">Premio mayor</p>
+          <p class="bi-premio-detalle" data-previa="detalle-mayor">Juega con la lotería el día del sorteo</p>
+        </div>
+      </div>
+      <div class="bi-numeros-bloque">
+        <span class="bi-etiqueta">Sus cifras</span>
+        <div class="bi-numeros" data-previa="numeros"><span>##</span></div>
+      </div>
+      <div class="bi-secos" data-previa="bloque-secos" hidden>
+        <span class="bi-etiqueta">Premios secos <small>(para boletas al día)</small></span>
+        <ul data-previa="secos"></ul>
+      </div>
+      <div class="bi-pie-cuerpo">
+        <div class="bi-comprador"><span class="bi-etiqueta">Comprador</span><p><b>Nombre del comprador</b><br>CC 0000000000 · Cel. 300 000 0000</p></div>
+        <div class="bi-pagos"><span class="bi-etiqueta" data-previa="valor">Valor $0</span><table data-previa="cuotas"></table></div>
+      </div>
+    </section>
+    <aside class="bi-talon">
+      <span class="bi-etiqueta">Verifique su boleta</span>
+      <div class="bi-qr"><div class="qr-ejemplo" aria-hidden="true"></div></div>
+      <p class="bi-codigo">XXXXXXXXXX</p>
+      <div class="bi-talon-numero"><span>Boleta</span><strong data-previa="etiqueta2">1</strong></div>
+    </aside>
+  </article>
+</section>

@@ -1,0 +1,187 @@
+{# Página de una rifa (GET /panel/rifas/{id}): cifras de venta, publicar, premios y sorteos, boletas con búsqueda, filtros y páginas. #}
+{% extends "panel/base_panel.html" %}
+{% set seccion = 'rifas' %}
+{% block titulo %}{{ rifa.nombre }} · RifaPlus{% endblock %}
+{% block contenido %}
+{% if creada %}<div class="alerta ok">La rifa quedó creada con {{ rifa.total_boletas|miles }} boletas y todas sus cifras, sin repetir.</div>{% endif %}
+{% if error %}<div class="alerta error" role="alert">{{ error }}</div>{% endif %}
+{% if aviso %}<div class="alerta ok">{{ aviso }}</div>{% endif %}
+{% if aviso_error %}<div class="alerta error" role="alert">{{ aviso_error }}</div>{% endif %}
+<div class="encabezado-pagina">
+  <div>
+    <h1 style="font-size:1.8rem">{{ rifa.nombre }}</h1>
+    {% set mayor = rifa.premios|selectattr('tipo', 'equalto', 'mayor')|first %}
+    {% if mayor %}<p class="premio-cabecera">🏆 {{ mayor.descripcion }}{% if mayor.valor_estimado %} · {{ mayor.valor_estimado|pesos }}{% endif %}</p>{% endif %}
+    <p class="muted">Juega con la {{ rifa.loteria.nombre }} el {{ rifa.fecha_sorteo|fecha_larga }} · números del sorteo del {{ '0' * rifa.cifras }} al {{ '9' * rifa.cifras }} · {{ rifa.series_por_boleta }} cifra{{ 's' if rifa.series_por_boleta > 1 }} por boleta</p>
+  </div>
+  <div class="acciones-boleta">
+    {% if rifa.estado == 'en_venta' or (rifa.estado == 'borrador' and d.estado_cobro != 'en_revision') %}<a class="boton secundario" href="/panel/rifas/{{ rifa.id }}/editar">{{ 'Editar rifa' if rifa.estado == 'borrador' else 'Corregir datos' }}</a>{% endif %}
+    <span class="estado {{ rifa.estado }}">{{ rifa.estado|replace('_',' ') }}</span>
+  </div>
+</div>
+
+{% if rifa.estado == 'en_venta' and rifa.vigente_hasta %}
+  {% set dias = (rifa.vigente_hasta - hoy).days %}
+  {% if dias < 0 %}
+    <div class="alerta error aviso-vigencia"><span><b>Rifa bloqueada por falta de renovación.</b> Su vigencia venció el {{ rifa.vigente_hasta|fecha_larga }}. Mientras no renueve, no puede vender boletas, registrar pagos ni resultados, ni imprimir boletas. Sus compradores sí pueden seguir verificando sus boletas.</span>
+      <a class="boton" href="/panel/rifas/{{ rifa.id }}/renovar">Renovar ahora</a></div>
+  {% elif dias <= 15 %}
+    <div class="alerta aviso aviso-vigencia"><span><b>Su rifa vence {{ 'hoy' if dias == 0 else 'en ' ~ dias ~ ' día' ~ ('s' if dias != 1) }}</b> ({{ rifa.vigente_hasta|fecha_larga }}). Renuévela para que no se bloquee.</span>
+      <a class="boton" href="/panel/rifas/{{ rifa.id }}/renovar">Renovar</a></div>
+  {% else %}
+    <p class="muted chico">Vigente hasta el {{ rifa.vigente_hasta|fecha_larga }} · <a href="/panel/rifas/{{ rifa.id }}/renovar">Renovar</a></p>
+  {% endif %}
+{% endif %}
+{% if rifa.estado == 'borrador' %}
+  {% if d.estado_cobro == 'en_revision' %}
+    <div class="alerta aviso"><b>Pago en revisión.</b> Lo enviaste el {{ d.cobro.fecha_pago|fecha_larga }}. Cuando RifaPlus lo confirme, la rifa quedará publicada automáticamente.</div>
+  {% elif d.estado_cobro == 'rechazado' %}
+    <div class="alerta error" style="display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap">
+      <span><b>RifaPlus no pudo confirmar el pago.</b> Motivo: {{ d.cobro.motivo_rechazo }}</span>
+      <a class="boton" href="/panel/rifas/{{ rifa.id }}/pagar">Enviar el pago de nuevo</a>
+    </div>
+  {% else %}
+    <div class="alerta aviso" style="display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap">
+      <span>La rifa está en borrador: revísela y corríjala con calma. Cuando esté lista, publíquela para empezar a vender.
+      {% if d.estado_cobro == 'sin_enviar' %}<br><span class="chico">Al publicar se paga <b>{{ d.cobro.valor|pesos }}</b> por usar RifaPlus en esta rifa, una sola vez.</span>{% endif %}</span>
+      <form method="post" action="/panel/rifas/{{ rifa.id }}/publicar"><button class="boton" type="submit">Publicar rifa</button></form>
+    </div>
+  {% endif %}
+{% endif %}
+
+<div class="cifras">
+  <div class="cifra"><strong>{{ d.ventas.vendidas|miles }} <small class="muted">de {{ rifa.total_boletas|miles }}</small></strong><span>boletas vendidas</span></div>
+  <div class="cifra"><strong>{{ d.ventas.recaudado|pesos }}</strong><span>recaudado</span></div>
+  <div class="cifra"><strong>{{ d.ventas.por_cobrar|pesos }}</strong><span>por cobrar ({{ d.ventas.con_saldo|miles }} boleta{{ 's' if d.ventas.con_saldo != 1 }})</span></div>
+  <div class="cifra"><strong>{{ rifa.valor_boleta|pesos }}</strong><span>precio de cada boleta</span></div>
+</div>
+
+{% if cuentas %}
+<details class="tarjeta cuentas-detalle" style="width:100%;max-width:none;margin-bottom:1.25rem" {% if rifa.estado != 'borrador' %}open{% endif %}>
+  <summary><b>Cuentas de la rifa</b></summary>
+  <table class="cuentas-rifa" style="margin-top:.75rem">
+    <tr><td>Si vende todas las boletas ({{ rifa.total_boletas|miles }} × {{ rifa.valor_boleta|pesos }})</td><td>{{ cuentas.recaudo_esperado|pesos }}</td></tr>
+    <tr><td>− Premios (mayor y secos, valor estimado)</td><td>{{ ('− ' ~ cuentas.premios|pesos) if cuentas.premios else '—' }}</td></tr>
+    <tr><td>− RifaPlus (plan{{ ' y renovaciones' if cuentas.rifaplus > 0 }})</td><td>{{ ('− ' ~ cuentas.rifaplus|pesos) if cuentas.rifaplus else 'Gratis' }}</td></tr>
+    <tr class="total {{ 'negativo' if cuentas.ganancia_esperada < 0 }}"><td>Ganancia esperada si vende todo</td><td>{{ cuentas.ganancia_esperada|pesos }}</td></tr>
+  </table>
+  {% if rifa.estado != 'borrador' %}
+  <table class="cuentas-rifa" style="margin-top:1rem">
+    <tr><td>Recaudado hasta hoy</td><td>{{ cuentas.recaudado|pesos }}</td></tr>
+    <tr><td>− Premios, RifaPlus y comisiones de vendedores ({{ cuentas.comisiones|pesos }})</td><td>− {{ (cuentas.premios + cuentas.rifaplus + cuentas.comisiones)|pesos }}</td></tr>
+    <tr class="total {{ 'negativo' if cuentas.ganancia_hoy < 0 }}"><td>Así va hoy</td><td>{{ cuentas.ganancia_hoy|pesos }}</td></tr>
+  </table>
+  <p class="ayuda" style="margin:.4rem 0 0">«Así va hoy» es negativo mientras no se haya recaudado lo suficiente para cubrir los premios.</p>
+  {% endif %}
+</details>
+{% endif %}
+<section id="sorteos">
+<h2 style="font-size:1.2rem">Premios y sorteos</h2>
+<div class="lista-sorteos">
+{% for x, enlace in sorteos or [] %}
+  {% set p = x.premio %}{% set r = x.resultado %}
+  <article class="tarjeta-sorteo {{ r.estado if r else 'pendiente' }}">
+    <div class="encabezado-pagina" style="margin-bottom:.5rem">
+      {% if p.foto_url %}<img class="miniatura" src="/archivos/{{ p.foto_url }}" alt="Foto de {{ p.descripcion }}">{% endif %}
+      <div style="flex:1">
+        <span class="estado {{ 'aprobado' if p.tipo == 'mayor' else '' }}">{{ 'Premio mayor' if p.tipo == 'mayor' else 'Premio seco' }}</span>
+        <h3 style="margin:.4rem 0 .1rem">{{ p.descripcion }}</h3>
+        <p class="muted chico" style="margin:0">{{ p.nombre_loteria }} · {{ p.fecha|fecha_larga }}{% if p.valor_estimado %} · valor estimado {{ p.valor_estimado|pesos }}{% endif %}</p>
+        {% if x.acumulados %}<p class="chico" style="margin:.3rem 0 0"><b>Incluye acumulado:</b> {{ x.acumulados|map(attribute='descripcion')|join(', ') }}</p>{% endif %}
+      </div>
+      {% if r %}<span class="estado {{ 'aprobado' if r.estado == 'con_ganador' else ('pendiente' if r.estado in ('debe_saldo', 'acumulado') else 'anulada') }}">{{ textos_estado[r.estado].split(':')[0] }}</span>{% endif %}
+    </div>
+    {% if r %}
+      <p>Cayó el <b>{{ r.numero_loteria }}</b>: juega el <b class="numero-ganador">{{ r.numero_jugado }}</b>.{% if r.observacion %} {{ r.observacion }}{% endif %}</p>
+      {% if x.boleta and x.boleta.cliente and r.estado in ('con_ganador', 'debe_saldo') %}
+        <p class="chico"><a href="/panel/rifas/{{ rifa.id }}/boletas/{{ x.boleta.id }}">Boleta {{ x.boleta.etiqueta }}</a> ·
+          <b>{{ x.boleta.cliente.nombre }}</b> · {{ x.boleta.cliente.tipo_documento }} {{ x.boleta.cliente.numero_documento }} ·
+          Cel. {{ x.boleta.cliente.celular }}</p>
+      {% elif x.boleta and x.boleta.cliente %}
+        <p class="chico muted">El número lo tenía la boleta {{ x.boleta.etiqueta }} ({{ x.boleta.cliente.nombre }}).</p>
+      {% endif %}
+      <div class="acciones-sorteo">
+        {% if enlace %}<a class="boton boton-whatsapp" href="{{ enlace }}" target="_blank" rel="noopener">Avisar al ganador</a>{% endif %}
+        {% if r.premio_entregado_en %}<span class="estado aprobado">Entregado el {{ r.premio_entregado_en|fecha_larga }}</span>
+        {% else %}
+          {% if r.estado == 'con_ganador' %}
+          <form method="post" action="/panel/rifas/{{ rifa.id }}/premios/{{ p.id }}/entregado"><button class="boton secundario" type="submit">Marcar premio entregado</button></form>
+          {% endif %}
+          <form method="post" action="/panel/rifas/{{ rifa.id }}/premios/{{ p.id }}/resultado/borrar" onsubmit="return confirm('¿Borrar este resultado para corregirlo?')"><button class="enlace-boton" type="submit">Corregir resultado</button></form>
+        {% endif %}
+      </div>
+    {% elif rifa.estado in ('en_venta', 'sorteada', 'cerrada') %}
+      <form method="post" action="/panel/rifas/{{ rifa.id }}/premios/{{ p.id }}/resultado" class="form-resultado">
+        <label for="res{{ p.id }}" class="chico">Número completo que cayó en la {{ p.nombre_loteria }}</label>
+        <div class="buscador"><input id="res{{ p.id }}" name="resultado_loteria" type="text" inputmode="numeric" pattern="[0-9 ]+" required placeholder="Ej. 4723">
+        <button class="boton" type="submit">Registrar resultado</button></div>
+        <span class="ayuda">RifaPlus toma {{ 'la última cifra' if rifa.cifras == 1 else 'las últimas ' ~ rifa.cifras ~ ' cifras' }} y busca la boleta ganadora.</span>
+      </form>
+    {% else %}
+      <p class="muted chico">Publique la rifa para registrar resultados.</p>
+    {% endif %}
+  </article>
+{% endfor %}
+</div>
+
+<details class="reglas-rifa">
+  <summary>Forma de pago y reglas de esta rifa</summary>
+  <div class="tabla-envoltura" style="margin:.75rem 0">
+    <table class="datos"><thead><tr><th>Cuota</th><th>Valor</th><th>Pagar a más tardar el</th></tr></thead><tbody>
+    {% for c in rifa.cuotas %}<tr><td>{{ c.numero }}</td><td>{{ c.valor|pesos }}</td><td>{{ c.fecha_limite|fecha_larga }}</td></tr>{% endfor %}
+    </tbody></table>
+  </div>
+  <p class="chico">Si un premio seco cae en una boleta atrasada: <b>{{ 'se acumula para el siguiente premio seco' if rifa.regla_seco_atrasado == 'acumula' else 'el premio queda desierto' }}</b>.<br>
+  Si el premio mayor cae en una boleta sin pagar completa: <b>{{ 'gana, pero debe pagar el saldo antes de recibirlo' if rifa.regla_mayor_sin_pagar == 'paga_saldo' else 'el premio queda desierto' }}</b>.</p>
+</details>
+</section>
+
+<div class="encabezado-pagina" style="margin-top:1.5rem;align-items:center">
+  <h2 style="font-size:1.2rem;margin:0">Boletas{% if d.buscar or d.filtro_estado %} · {{ d.encontradas|miles }} encontrada{{ 's' if d.encontradas != 1 }}{% endif %}</h2>
+  <form method="get" action="/panel/rifas/{{ rifa.id }}" class="buscador">
+    <input type="text" name="buscar" value="{{ d.buscar }}" placeholder="Número, boleta, cédula o nombre" aria-label="Buscar boletas">
+    {% if d.filtro_estado %}<input type="hidden" name="estado" value="{{ d.filtro_estado }}">{% endif %}
+    <button class="boton secundario" type="submit">Buscar</button>
+    {% if d.buscar %}<a href="/panel/rifas/{{ rifa.id }}{% if d.filtro_estado %}?estado={{ d.filtro_estado }}{% endif %}">Quitar búsqueda</a>{% endif %}
+  </form>
+</div>
+<nav class="filtros" aria-label="Filtrar boletas">
+  {% for clave, nombre in filtros.items() %}
+  <a href="/panel/rifas/{{ rifa.id }}{% if clave %}?estado={{ clave }}{% endif %}" {% if d.filtro_estado == clave %}aria-current="page"{% endif %}>{{ nombre }}</a>
+  {% endfor %}
+</nav>
+<div class="rejilla-boletas">
+  {% for b in d.boletas %}
+  {% set pagado = d.pagado.get(b.id, 0) %}
+  {% set pago = 'pagada' if pagado >= rifa.valor_boleta|int else ('abonada' if pagado > 0 else 'debe') %}
+  <a class="mini-boleta {{ b.estado }} {{ pago if b.estado == 'vendida' }}" href="/panel/rifas/{{ rifa.id }}/boletas/{{ b.id }}">
+    <b>Boleta {{ b.etiqueta }}</b>
+    {% if rifa.series_por_boleta > 1 %}<div class="nums" title="Cifras de la boleta">{% for n in b.numeros %}<span>{{ n.numero }}</span>{% endfor %}</div>{% endif %}
+    {% if b.estado == 'vendida' %}
+      <div>{{ b.cliente.nombre }}</div>
+      <div class="estado {{ 'aprobado' if pago == 'pagada' else 'pendiente' }}">{{ 'Pagada' if pago == 'pagada' else ('Debe ' ~ (rifa.valor_boleta|int - pagado)|pesos) }}</div>
+    {% else %}
+      <div class="muted">{{ b.estado|capitalize }}</div>
+    {% endif %}
+  </a>
+  {% else %}
+  <p class="muted">No hay boletas que coincidan.</p>
+  {% endfor %}
+</div>
+{% if d.paginas > 1 %}
+<nav class="paginacion" aria-label="Páginas de boletas">
+  {% set q = ('&buscar=' ~ d.buscar|urlencode if d.buscar else '') ~ ('&estado=' ~ d.filtro_estado if d.filtro_estado else '') %}
+  {% if d.pagina > 1 %}<a href="?pagina={{ d.pagina - 1 }}{{ q }}">Anterior</a>{% endif %}
+  <span>Página {{ d.pagina }} de {{ d.paginas|miles }}</span>
+  {% if d.pagina < d.paginas %}<a href="?pagina={{ d.pagina + 1 }}{{ q }}">Siguiente</a>{% endif %}
+</nav>
+{% endif %}
+{% if puede_eliminarse %}
+<form method="post" action="/panel/rifas/{{ rifa.id }}/eliminar" class="zona-peligro"
+      onsubmit="return confirm('¿Eliminar la rifa «{{ rifa.nombre }}» con todas sus boletas? Esto no se puede deshacer.')">
+  <div><b>Eliminar esta rifa</b><br><span class="muted chico">Se puede porque todavía no tiene boletas vendidas ni pagos.</span></div>
+  <button class="boton peligro" type="submit">Eliminar rifa</button>
+</form>
+{% endif %}
+<p class="muted chico" style="margin-top:2rem">Organiza: {{ rifa.organizador.nombre }}. RifaPlus es la plataforma de administración; la rifa, sus premios y su autorización son responsabilidad del organizador.</p>
+{% endblock %}

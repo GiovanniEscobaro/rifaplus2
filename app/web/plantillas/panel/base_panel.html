@@ -1,0 +1,45 @@
+{# Estructura del panel del organizador: menú lateral azul y área de contenido. #}
+{% extends "base.html" %}
+{% block cuerpo %}
+<div class="panel">
+  <aside class="lateral">
+    <a href="/panel"><img src="/estaticos/img/rifaplus-solo-nombre-fondo-azul.svg" alt="RifaPlus"></a>
+    <button type="button" class="boton-menu" aria-expanded="false" aria-label="Abrir el menú">☰ Menú</button>
+    <nav aria-label="Menú del panel">
+      <a href="/panel" {% if seccion == 'inicio' %}aria-current="page"{% endif %}>Inicio</a>
+      {% if usuario.rol != 'superadmin' %}
+      <a href="/panel/rifas/nueva" {% if seccion == 'nueva' %}aria-current="page"{% endif %}>Nueva rifa</a>
+      <a href="/panel/informes" {% if seccion == 'informes' %}aria-current="page"{% endif %}>Informes</a>
+      <a href="/panel/vendedores" {% if seccion == 'vendedores' %}aria-current="page"{% endif %}>Vendedores</a>
+      {% if usuario.rol == 'admin' %}<a href="/panel/equipo" {% if seccion == 'equipo' %}aria-current="page"{% endif %}>Equipo</a>{% endif %}
+      {% endif %}
+      <a href="/verificar">Verificar boleta</a>
+      <a href="/cambiar-clave">Cambiar clave</a>
+    </nav>
+    <div class="usuario">
+      <div>{{ usuario.nombre }}</div>
+      <form method="post" action="/salir"><button class="enlace-boton" type="submit">Cerrar sesión</button></form>
+    </div>
+  </aside>
+  <main class="contenido">
+    {% block contenido %}{% endblock %}
+  </main>
+</div>
+
+{# Chat de soporte (solo organizadores): preguntas frecuentes con respuesta automática y conversación con RifaPlus #}
+<div id="chat-soporte" class="chat-soporte">
+  <section class="chat-ventana" hidden aria-label="Chat de soporte de RifaPlus">
+    <header class="chat-cabecera"><b>Ayuda de RifaPlus</b><button type="button" class="chat-cerrar" aria-label="Cerrar el chat">✕</button></header>
+    <div class="chat-mensajes" aria-live="polite"></div>
+    <div class="chat-sugerencias"></div>
+    <form class="chat-form">
+      <textarea rows="2" maxlength="2000" placeholder="Escriba su pregunta…" aria-label="Mensaje"></textarea>
+      <button class="boton" type="submit">Enviar</button>
+    </form>
+  </section>
+  <button type="button" class="chat-boton" aria-expanded="false" aria-label="Abrir el chat de ayuda">
+    💬 Ayuda<span class="chat-aviso" hidden aria-label="Respuesta nueva"></span>
+  </button>
+</div>
+<script src="/estaticos/js/soporte.js?v={{ v }}" defer></script>
+{% endblock %}

@@ -1,0 +1,65 @@
+{# Formulario de registro de organizadores (GET/POST /registro). #}
+{% extends "base.html" %}
+{% block titulo %}Crear cuenta · RifaPlus{% endblock %}
+{% block cuerpo %}
+{% include "componentes/cabecera_publica.html" %}
+<main class="pagina-form">
+  <form class="tarjeta ancha" method="post" action="/registro" novalidate>
+    <h1 style="font-size:1.8rem">Crear mi cuenta gratis</h1>
+    <p class="muted">Le enviaremos una clave temporal. Al ingresar por primera vez, usted crea su clave definitiva.</p>
+    {% if errores %}<div class="alerta error" role="alert"><ul>{% for e in errores %}<li>{{ e }}</li>{% endfor %}</ul></div>{% endif %}
+
+    <p class="grupo-titulo">¿Cómo se registra?</p>
+    <div class="opciones">
+      <label class="opcion"><input type="radio" name="tipo_persona" value="natural" {% if datos.tipo_persona != 'juridica' %}checked{% endif %}>
+        <span>Persona natural<small>A su nombre</small></span></label>
+      <label class="opcion"><input type="radio" name="tipo_persona" value="juridica" {% if datos.tipo_persona == 'juridica' %}checked{% endif %}>
+        <span>Persona jurídica<small>Empresa, fundación o asociación</small></span></label>
+    </div>
+
+    <div class="campo"><label for="nombre">Nombre completo o razón social</label>
+      <input id="nombre" name="nombre" type="text" required maxlength="150" data-validar="requerido texto" autocomplete="name" value="{{ datos.nombre or '' }}"></div>
+    <div class="campo"><label for="email">Correo electrónico</label>
+      <input id="email" name="email" type="email" required data-validar="requerido email" autocomplete="email" value="{{ datos.email or '' }}">
+      <span class="ayuda">Con este correo va a ingresar.</span></div>
+    <div class="fila">
+      <div class="campo"><label for="celular">Celular</label>
+        <input id="celular" name="celular" type="tel" required data-validar="requerido celular" autocomplete="tel" placeholder="300 123 4567" value="{{ datos.celular or '' }}"></div>
+      <div class="campo"><label for="whatsapp">WhatsApp</label>
+        <input id="whatsapp" name="whatsapp" type="tel" data-validar="requerido celular" placeholder="300 123 4567" value="{{ datos.whatsapp or '' }}"></div>
+    </div>
+    <label class="casilla"><input type="checkbox" name="mismo_numero" value="true" id="mismo_numero" {% if datos.mismo_numero or not datos %}checked{% endif %}>
+      Mi WhatsApp es el mismo número del celular</label>
+
+    <div class="fila">
+      <div class="campo"><label for="tipo_documento">Tipo de documento</label>
+        <select id="tipo_documento" name="tipo_documento" required data-validar="seleccion">
+          <option value="">Escoja…</option>
+          {% for v, t in [('CC','Cédula de ciudadanía'),('CE','Cédula de extranjería'),('PP','Pasaporte'),('NIT','NIT')] %}
+          <option value="{{ v }}" {% if datos.tipo_documento == v %}selected{% endif %}>{{ t }}</option>{% endfor %}
+        </select></div>
+      <div class="campo"><label for="numero_documento">Número de documento</label>
+        <input id="numero_documento" name="numero_documento" type="text" inputmode="numeric" maxlength="20" required data-validar="requerido documento" value="{{ datos.numero_documento or '' }}">
+        <span class="ayuda">Escríbalo tal como aparece en su documento: RifaPlus verificará su nombre y su número. Solo se permite una cuenta por documento.</span></div>
+    </div>
+
+    <hr class="separador">
+    <p class="grupo-titulo">Datos opcionales</p>
+    <div class="fila">
+      <div class="campo"><label for="direccion">Dirección</label>
+        <input id="direccion" name="direccion" type="text" maxlength="200" autocomplete="street-address" value="{{ datos.direccion or '' }}"></div>
+      <div class="campo"><label for="ciudad">Ciudad</label>
+        <input id="ciudad" name="ciudad" type="text" maxlength="100" value="{{ datos.ciudad or '' }}"></div>
+    </div>
+
+
+    <label class="casilla"><input type="checkbox" name="acepta_terminos" value="true" {% if datos.acepta_terminos %}checked{% endif %}>
+      <span>Acepto los <a href="/terminos" target="_blank" rel="noopener">términos y condiciones</a> y entiendo que RifaPlus es una herramienta para administrar rifas: no organiza, opera ni garantiza rifas. Cada organizador es el responsable de su rifa, de su autorización y de sus premios.</span></label>
+    <label class="casilla"><input type="checkbox" name="acepta_datos" value="true" {% if datos.acepta_datos %}checked{% endif %}>
+      <span>Acepto la <a href="/tratamiento-de-datos" target="_blank" rel="noopener">política de tratamiento de datos personales</a>, conforme a la Ley 1581 de 2012.</span></label>
+    <button class="boton grande" type="submit" style="width:100%">Crear mi cuenta</button>
+    <p class="muted chico" style="margin-top:1rem;text-align:center">¿Ya tiene cuenta? <a href="/ingresar">Ingrese aquí</a></p>
+  </form>
+</main>
+<script src="/estaticos/js/registro.js?v={{ v }}" defer></script>
+{% endblock %}

@@ -1,0 +1,29 @@
+{# Consulta SQL de solo lectura (GET/POST /admin/datos/consulta): solo SELECT o WITH, 5 segundos, 500 filas. #}
+{% extends "admin/base_admin.html" %}
+{% block titulo %}Consulta SQL · Base de datos{% endblock %}
+{% block contenido %}
+<p><a href="/admin/datos">← Base de datos</a></p>
+<div class="encabezado-pagina"><div><h1 style="font-size:1.6rem">Consulta SQL</h1>
+  <p class="muted">Solo lectura: se permiten consultas SELECT o WITH. Máximo 5 segundos y 500 filas. Cada consulta queda en la auditoría.</p></div></div>
+<form method="post" action="/admin/datos/consulta" class="tarjeta" style="width:100%;max-width:none">
+  <textarea name="sql" rows="6" class="sql" spellcheck="false" placeholder="SELECT nombre, email, estado FROM organizadores ORDER BY fecha_creacion DESC">{{ sql }}</textarea>
+  <div class="ejemplos-sql chico muted">Ejemplos:
+    <button type="button" class="enlace-boton" data-sql="SELECT o.nombre, count(r.id) AS rifas FROM organizadores o LEFT JOIN rifas r ON r.organizador_id = o.id GROUP BY o.nombre ORDER BY rifas DESC">rifas por organizador</button> ·
+    <button type="button" class="enlace-boton" data-sql="SELECT r.nombre, count(b.id) FILTER (WHERE b.estado = 'vendida') AS vendidas, r.total_boletas FROM rifas r JOIN boletas b ON b.rifa_id = r.id GROUP BY r.id ORDER BY vendidas DESC">boletas vendidas por rifa</button> ·
+    <button type="button" class="enlace-boton" data-sql="SELECT c.estado, count(*), sum(c.valor) AS total FROM cobros_rifa c GROUP BY c.estado">cobros de planes</button>
+  </div>
+  <div style="display:flex;gap:.5rem;margin-top:.75rem">
+    <button class="boton" type="submit">Ejecutar</button>
+    {% if r %}<button class="boton secundario" type="submit" name="descargar" value="1">⬇ Descargar en Excel</button>{% endif %}
+  </div>
+</form>
+{% if r %}
+  <p class="muted chico" style="margin-top:1rem">{{ r.total|miles }} fila{{ 's' if r.total != 1 }}{% if r.total >= 500 %} (se muestran las primeras 500){% endif %}</p>
+  {% include "admin/_resultado.html" %}
+{% endif %}
+<script>
+  document.querySelectorAll('[data-sql]').forEach(b => b.addEventListener('click', () => {
+    document.querySelector('textarea[name=sql]').value = b.dataset.sql;
+  }));
+</script>
+{% endblock %}

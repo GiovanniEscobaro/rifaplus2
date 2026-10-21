@@ -1,0 +1,44 @@
+{# Bandeja de soporte (GET /admin/soporte y /admin/soporte/{id}): conversaciones con organizadores; las pendientes primero. #}
+{% extends "admin/base_admin.html" %}
+{% block titulo %}Soporte · Superadministrador{% endblock %}
+{% block contenido %}
+<div class="encabezado-pagina"><div><h1 style="font-size:1.8rem">Soporte</h1>
+  <p class="muted">Consultas de los organizadores desde el chat de su panel. El asistente responde las preguntas comunes; aquí aparecen las que necesitan una persona.</p></div></div>
+<div class="bandeja">
+  <nav class="bandeja-lista" aria-label="Conversaciones">
+    {% for c in conversaciones %}
+      {% set del_organizador = c.mensajes|selectattr('autor', 'equalto', 'organizador')|list %}
+      {% set ultimo = del_organizador[-1] if del_organizador else none %}
+      <a href="/admin/soporte/{{ c.id }}" class="bandeja-item {{ 'pendiente' if c.estado == 'pendiente' }}" {% if actual and actual.id == c.id %}aria-current="page"{% endif %}>
+        <b>{{ c.organizador.nombre }}</b>
+        {% if c.estado == 'pendiente' %}<span class="estado pendiente">Por responder</span>{% endif %}
+        <span class="muted chico">{{ (ultimo.texto[:70] ~ ('…' if ultimo.texto|length > 70 else '')) if ultimo }}</span>
+      </a>
+    {% else %}
+      <p class="muted" style="padding:1rem">Todavía no hay conversaciones.</p>
+    {% endfor %}
+  </nav>
+  <section class="bandeja-detalle">
+    {% if actual %}
+      <header class="encabezado-pagina" style="margin-bottom:.75rem">
+        <div><b>{{ actual.organizador.nombre }}</b><br><span class="muted chico">{{ actual.organizador.email }} · {{ actual.organizador.whatsapp }} · <a href="/admin/organizadores/{{ actual.organizador_id }}">ver organizador</a></span></div>
+        {% if actual.estado == 'pendiente' %}
+        <form method="post" action="/admin/soporte/{{ actual.id }}"><input type="hidden" name="accion" value="atendida"><button class="enlace-boton" type="submit">Marcar como atendida</button></form>
+        {% endif %}
+      </header>
+      <div class="chat-mensajes bandeja-mensajes">
+        {% for m in actual.mensajes %}
+          <div class="chat-msg {{ m.autor }}"><span class="chat-quien">{{ {'organizador': actual.organizador.nombre, 'asistente': 'Asistente', 'rifaplus': 'RifaPlus (usted)'}[m.autor] }} · {{ m.fecha|hora_colombia }}</span><p>{{ m.texto }}</p></div>
+        {% endfor %}
+        <span id="final"></span>
+      </div>
+      <form method="post" action="/admin/soporte/{{ actual.id }}" class="chat-form" style="border:0;padding:.75rem 0 0">
+        <textarea name="texto" rows="3" maxlength="2000" placeholder="Escriba su respuesta…" required></textarea>
+        <button class="boton" type="submit">Responder</button>
+      </form>
+    {% else %}
+      <div class="vacio"><p class="muted">Escoja una conversación de la lista.</p></div>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}

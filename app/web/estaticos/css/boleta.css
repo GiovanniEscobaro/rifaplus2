@@ -1,0 +1,75 @@
+/* Boleta individual: diseño tipo talonario, pensado para la pantalla y para imprimir en una hoja carta. */
+.hoja { max-width: 900px; margin: 0 auto; padding: 1.5rem 1rem 3rem; }
+.barra-acciones { display: flex; justify-content: space-between; align-items: center; gap: 1rem; margin-bottom: 1.25rem; }
+
+.boleta-ind { display: grid; grid-template-columns: 1fr 210px; background: #fff; border: 1.5px solid var(--tinta);
+  border-radius: 14px; overflow: hidden; position: relative; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+/* Muescas del corte entre cuerpo y talón */
+.boleta-ind::before, .boleta-ind::after { content: ""; position: absolute; right: 199px; width: 22px; height: 22px;
+  border-radius: 50%; background: #fff; border: 1.5px solid var(--tinta); }
+.boleta-ind::before { top: -12px; } .boleta-ind::after { bottom: -12px; }
+
+.bi-cuerpo { padding: 1.4rem 1.6rem; display: flex; flex-direction: column; gap: 1rem; border-right: 2px dashed #9aa4b5; }
+.bi-cabecera { display: flex; justify-content: space-between; gap: 1rem; align-items: flex-start; }
+.bi-organiza { margin: 0; font-size: .85rem; color: var(--gris); }
+.bi-rifa { margin: .1rem 0 0; font-size: 1.7rem; line-height: 1.15; }
+.bi-numero-boleta { text-align: center; border: 2px solid var(--azul); border-radius: 10px; padding: .3rem .8rem; color: var(--azul); }
+.bi-numero-boleta span { display: block; font-size: .7rem; text-transform: uppercase; letter-spacing: .08em; }
+.bi-numero-boleta strong { font-size: 1.6rem; line-height: 1.1; }
+
+.bi-etiqueta { display: block; font-size: .72rem; font-weight: 600; text-transform: uppercase; letter-spacing: .08em; color: var(--azul); margin-bottom: .2rem; }
+.bi-etiqueta small { text-transform: none; letter-spacing: 0; color: var(--gris); font-weight: 500; }
+.bi-premio-mayor { background: var(--azul); color: #fff; border-radius: 10px; padding: .8rem 1rem; }
+.bi-premio-mayor .bi-etiqueta { color: #cfe0ff; }
+.bi-premio-nombre { margin: 0; font-size: 1.35rem; font-weight: 700; line-height: 1.2; }
+.bi-premio-detalle { margin: .2rem 0 0; font-size: .85rem; color: #e3ecff; }
+
+.bi-numeros { display: flex; flex-wrap: wrap; gap: .5rem; }
+.bi-numeros span { display: grid; place-items: center; min-width: 3.4rem; height: 3.4rem; padding: 0 .5rem; border-radius: 999px;
+  border: 3px solid var(--azul); color: var(--azul); font-weight: 700; font-size: 1.45rem; }
+.bi-ayuda { margin: .35rem 0 0; font-size: .78rem; color: var(--gris); }
+
+.bi-secos ul { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: .3rem .9rem; }
+.bi-secos li { font-size: .85rem; }
+.bi-secos li span { display: block; font-size: .75rem; color: var(--gris); }
+
+.bi-pie-cuerpo { display: grid; grid-template-columns: 1fr 1.3fr; gap: 1rem; border-top: 1px solid var(--linea); padding-top: .8rem; }
+.bi-comprador p { margin: 0; font-size: .85rem; }
+.bi-pagos table { width: 100%; font-size: .78rem; border-collapse: collapse; }
+.bi-pagos td { padding: .1rem .2rem; }
+.bi-pagos tr.pagada { color: var(--ok); }
+.bi-pagos tr.vencida { color: var(--error); }
+.bi-saldo { margin: .3rem 0 0; font-size: .85rem; }
+.bi-saldo.pagada { color: var(--ok); }
+
+.bi-talon { padding: 1.2rem .9rem; display: flex; flex-direction: column; align-items: center; text-align: center; gap: .35rem; background: var(--azul-palido); }
+.bi-qr svg { width: 150px; height: 150px; display: block; background: #fff; border-radius: 6px; padding: 4px; }
+.bi-codigo { margin: 0; font-weight: 700; letter-spacing: .12em; font-size: .95rem; }
+.bi-mini { margin: 0; font-size: .7rem; color: var(--gris); }
+.bi-talon-numero { margin-top: auto; border-top: 1px dashed #9aa4b5; padding-top: .6rem; width: 100%; }
+.bi-talon-numero span { display: block; font-size: .7rem; text-transform: uppercase; letter-spacing: .08em; color: var(--gris); }
+.bi-talon-numero strong { font-size: 1.4rem; color: var(--azul); }
+.bi-legal { margin: 1rem auto 0; max-width: 760px; text-align: center; font-size: .72rem; color: var(--gris); }
+
+@media (max-width: 640px) {
+  .boleta-ind { grid-template-columns: 1fr; }
+  .boleta-ind::before, .boleta-ind::after { display: none; }
+  .bi-cuerpo { border-right: 0; border-bottom: 2px dashed #9aa4b5; }
+  .bi-pie-cuerpo { grid-template-columns: 1fr; }
+}
+
+@media print {
+  @page { size: letter; margin: 1.2cm; }
+  body { background: #fff; }
+  .no-imprimir { display: none !important; }
+  .hoja { padding: 0; max-width: none; }
+  .boleta-ind { break-inside: avoid; }
+  .boleta-ind::before, .boleta-ind::after { background: #fff; }
+}
+
+/* Fotos de premios en la boleta */
+.bi-premio-mayor { display: flex; gap: .9rem; align-items: center; }
+.bi-foto-mayor { width: 108px; height: 108px; object-fit: cover; border-radius: 8px; border: 3px solid #fff; flex: none; background: #fff; }
+.bi-secos li { display: flex; gap: .5rem; align-items: center; }
+.bi-foto-seco { width: 40px; height: 40px; object-fit: cover; border-radius: 6px; flex: none; }
+@media (max-width: 640px) { .bi-foto-mayor { width: 80px; height: 80px; } }

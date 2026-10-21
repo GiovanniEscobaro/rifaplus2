@@ -1,0 +1,22 @@
+# Ejemplo del servicio de RifaPlus para el docker-compose del servidor (Caddy y PostgreSQL ya existen aparte).
+# Ajuste los nombres de las redes a las que usan su Caddy y su PostgreSQL. Ver docs/DOCKER.md.
+services:
+  rifaplus:
+    build: .
+    image: rifaplus:latest
+    container_name: rifaplus
+    restart: unless-stopped
+    env_file: .env                    # aquí van DATABASE_URL, CLAVE_SECRETA, etc. (ver .env.example)
+    volumes:
+      - ./uploads:/app/uploads        # fotos de premios y comprobantes, fuera del contenedor
+    expose:
+      - "8000"                        # solo dentro de Docker; Caddy publica el HTTPS
+    networks:
+      - proxy                         # la red donde está Caddy
+      - basedatos                     # la red donde está el contenedor «postgres»
+
+networks:
+  proxy:
+    external: true
+  basedatos:
+    external: true

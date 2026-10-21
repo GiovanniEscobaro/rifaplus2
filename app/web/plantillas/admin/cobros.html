@@ -1,0 +1,52 @@
+{# Pagos de planes por revisar (GET /admin/cobros): el organizador ya pidió publicar; al aprobar, la rifa queda publicada. #}
+{% extends "admin/base_admin.html" %}
+{% block titulo %}Pagos por revisar · Superadministrador{% endblock %}
+{% block contenido %}
+<div class="encabezado-pagina"><div><h1 style="font-size:1.8rem">Pagos por revisar</h1>
+  <p class="muted">Organizadores que pidieron publicar su rifa y enviaron el pago del plan. Verifique que el dinero llegó a la cuenta de RifaPlus: al aprobar, la rifa queda publicada.</p></div></div>
+{% for c in cobros %}
+  {% set rifa = c.rifa %}
+  <section class="tarjeta" style="width:100%;max-width:none;margin-bottom:1rem">
+    <div class="encabezado-pagina" style="margin-bottom:.5rem">
+      <div><b>{{ rifa.nombre }}</b><br><span class="muted chico">{{ rifa.organizador.nombre }} · {{ rifa.organizador.whatsapp }} · {{ rifa.plan.nombre }}</span></div>
+      <strong style="font-size:1.3rem">{{ c.valor|pesos }}</strong>
+    </div>
+    <p class="chico">Enviado el {{ c.fecha_pago|fecha_larga }}{% if c.medio_pago_id %} por {{ c.medio_pago.nombre if c.medio_pago else '' }}{% endif %} ·
+      Referencia: <b>{{ c.referencia or '—' }}</b>
+      {% if c.comprobante_url %} · <a href="/admin/cobros/{{ c.id }}/comprobante" target="_blank" rel="noopener">Ver comprobante</a>{% endif %}</p>
+    <form method="post" action="/admin/cobros/{{ c.id }}" class="fila-3" style="align-items:end">
+      <div class="campo"><label for="ref{{ c.id }}">Referencia (puede corregirla)</label>
+        <input id="ref{{ c.id }}" name="referencia" type="text" maxlength="100" value="{{ c.referencia or '' }}"></div>
+      <div class="campo"><label for="mot{{ c.id }}">Motivo (solo si rechaza)</label>
+        <input id="mot{{ c.id }}" name="motivo" type="text" maxlength="300" placeholder="No llegó el dinero"></div>
+      <div class="campo" style="flex-direction:row;gap:.5rem">
+        <button class="boton" type="submit" name="accion" value="aprobar">Aprobar y publicar</button>
+        <button class="boton secundario" type="submit" name="accion" value="rechazar">Rechazar</button>
+      </div>
+    </form>
+  </section>
+{% else %}
+  <div class="vacio"><h2>No hay pagos por revisar</h2><p class="muted">Cuando un organizador pida publicar una rifa de pago, aparecerá aquí.</p></div>
+{% endfor %}
+
+<h2 style="font-size:1.3rem;margin-top:2rem">Renovaciones por revisar</h2>
+<p class="muted">Rifas publicadas que pagaron otro período. Al aprobar, la vigencia se extiende y, si estaba bloqueada, se desbloquea.</p>
+{% for rn in renovaciones or [] %}
+  <section class="tarjeta" style="width:100%;max-width:none;margin-bottom:1rem">
+    <div class="encabezado-pagina" style="margin-bottom:.5rem">
+      <div><b>{{ rn.rifa.nombre }}</b><br><span class="muted chico">{{ rn.rifa.organizador.nombre }} · renovación por {{ rn.meses }} meses · vigente hasta {{ rn.rifa.vigente_hasta|fecha_larga if rn.rifa.vigente_hasta else '—' }}</span></div>
+      <strong style="font-size:1.3rem">{{ rn.valor|pesos }}</strong>
+    </div>
+    <p class="chico">Enviado el {{ rn.fecha_pago|fecha_larga }}{% if rn.medio_pago %} por {{ rn.medio_pago.nombre }}{% endif %} · Referencia: <b>{{ rn.referencia or '—' }}</b></p>
+    <form method="post" action="/admin/renovaciones/{{ rn.id }}" class="fila-3" style="align-items:end">
+      <div class="campo"><label for="mr{{ rn.id }}">Motivo (solo si rechaza)</label><input id="mr{{ rn.id }}" name="motivo" type="text" maxlength="300"></div>
+      <div class="campo" style="flex-direction:row;gap:.5rem">
+        <button class="boton" type="submit" name="accion" value="aprobar">Aprobar y renovar</button>
+        <button class="boton secundario" type="submit" name="accion" value="rechazar">Rechazar</button>
+      </div>
+    </form>
+  </section>
+{% else %}
+  <p class="muted">No hay renovaciones por revisar.</p>
+{% endfor %}
+{% endblock %}

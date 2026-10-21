@@ -1,0 +1,35 @@
+{# Política de tratamiento de datos personales, Ley 1581 de 2012 (GET /tratamiento-de-datos). #}
+{% extends "base.html" %}
+{% block titulo %}Tratamiento de datos personales · RifaPlus{% endblock %}
+{% block cuerpo %}
+{% import "legal/_responsable.html" as r with context %}
+{% include "componentes/cabecera_publica.html" %}
+<main class="seccion">
+  <article class="contenedor legal">
+    <h1>Política de tratamiento de datos personales</h1>
+    <p class="muted">Versión {{ version }}. Conforme a la Ley 1581 de 2012 y sus decretos reglamentarios.</p>
+
+    <h2>1. Responsable</h2>
+    <p>{{ r.responsable }}, identificado con {{ r.documento }}, con domicilio en {{ r.ciudad }}, Colombia, quien presta el servicio RifaPlus bajo la marca GE Desarrollo e Infraestructura de Software. Correo para consultas y reclamos: {{ r.contacto }}.</p>
+
+    <h2>2. Qué datos tratamos</h2>
+    <p>De los organizadores: nombre o razón social, tipo de persona, documento (si lo registran), correo, celular, WhatsApp, dirección y ciudad (opcionales), y registros de acceso y de aceptación de documentos.</p>
+    <p>De compradores y vendedores: los datos que cada organizador registra. Sobre estos datos, el organizador es el responsable y RifaPlus actúa como encargado, tratándolos solo para prestarle el servicio.</p>
+
+    <h2>3. Para qué los usamos</h2>
+    <ul>
+      <li>Crear y administrar la cuenta del organizador y permitirle usar RifaPlus.</li>
+      <li>Enviar la clave temporal, avisos de seguridad y mensajes sobre el servicio.</li>
+      <li>Enviar, por cuenta del organizador, los avisos de WhatsApp a sus compradores que lo hayan aceptado.</li>
+      <li>Cobrar las tarifas, prevenir fraudes y cumplir obligaciones legales.</li>
+    </ul>
+
+    <h2>4. Derechos del titular</h2>
+    <p>Usted puede conocer, actualizar, rectificar y pedir la supresión de sus datos, revocar la autorización y presentar quejas ante la Superintendencia de Industria y Comercio. Para ejercerlos, escriba a {{ r.contacto }}.</p>
+
+    <h2>5. Seguridad</h2>
+    <p>Las claves se guardan cifradas y el acceso a los datos está restringido. Los datos no se venden ni se comparten con terceros, salvo por obligación legal.</p>
+  </article>
+</main>
+{% include "componentes/pie_publico.html" %}
+{% endblock %}

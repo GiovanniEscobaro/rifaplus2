@@ -1,0 +1,68 @@
+{# Precios de las rifas (GET/POST /admin/planes): tabla de tipos de rifa × duraciones, tipos nuevos y duraciones.
+   Lo que se escribe aquí es lo que paga el organizador al publicar o al renovar. Aplica a las rifas nuevas. #}
+{% extends "admin/base_admin.html" %}
+{% block titulo %}Precios · Superadministrador{% endblock %}
+{% block contenido %}
+<div class="encabezado-pagina"><div><h1 style="font-size:1.8rem">Precios de las rifas</h1>
+  <p class="muted">Cada fila es un tipo de rifa y cada columna una duración. El organizador escoge la duración al crear la rifa y paga ese valor al publicarla; al terminar el período, paga otra vez para <b>renovar</b>, o la rifa se bloquea. Los cambios aplican a las rifas nuevas y a las próximas renovaciones.</p></div></div>
+
+{% if tipos|length < 13 %}
+<div class="alerta aviso aviso-vigencia">
+  <span>{% if not tipos %}<b>No hay tipos de rifa creados.</b> Sin ellos, los organizadores no pueden crear rifas.{% else %}Faltan tipos de rifa iniciales.{% endif %}</span>
+  <form method="post" action="/admin/planes/crear-tipos"><button class="boton" type="submit">Crear los tipos de rifa</button></form>
+</div>
+{% endif %}
+
+<form method="post" action="/admin/planes" class="tarjeta" style="width:100%;max-width:none">
+  <div class="tabla-envoltura"><table class="datos tabla-precios">
+    <thead><tr><th>Boletas que vende</th><th>Cifras por boleta</th><th>Números del sorteo</th>
+      {% for d in duraciones %}<th>{{ d.nombre }}{% if not d.activa %} <span class="estado borrador">inactiva</span>{% endif %}</th>{% endfor %}
+      <th>Se ofrece</th></tr></thead>
+    <tbody>
+    {% for t in tipos %}
+      {% set digitos = ((t.boletas_min * t.numeros_min)|string|length) - 1 %}
+      <tr {% if not t.activo %}class="muted"{% endif %}>
+        <td><b>{{ t.boletas_min|miles }}</b></td><td>{{ t.numeros_min }}</td><td>del {{ '0' * digitos }} al {{ '9' * digitos }}</td>
+        {% for d in duraciones %}
+        <td><input name="precio_{{ t.id }}_{{ d.id }}" type="text" inputmode="numeric" class="campo-pesos"
+             value="{{ precios.get(t.id, {}).get(d.id, 0)|miles }}" aria-label="Precio de {{ t.nombre }} por {{ d.nombre }}" style="max-width:8.5rem"></td>
+        {% endfor %}
+        <td><label class="casilla" style="margin:0"><input type="checkbox" name="activo_{{ t.id }}" value="true" {% if t.activo %}checked{% endif %}> Sí</label></td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table></div>
+  <p class="ayuda">Precio en 0 = gratis por esa duración. Si desmarca «Se ofrece», ese tipo de rifa no aparece al crear una rifa nueva.</p>
+  <button class="boton" type="submit">Guardar precios</button>
+</form>
+
+<div class="dos-columnas" style="margin-top:1.5rem">
+  <section class="tarjeta" style="width:100%;max-width:none">
+    <h2 style="font-size:1.1rem">Agregar un tipo de rifa</h2>
+    <p class="muted chico">Boletas × cifras por boleta debe dar 10, 100, 1.000 o 10.000 (los números del sorteo). Por ejemplo, 20 boletas de 5 cifras = 100 números, del 00 al 99.</p>
+    <form method="post" action="/admin/planes/tipo" class="fila-plan" style="border:0">
+      <div class="campo"><label for="nt_boletas">Boletas que vende</label><input id="nt_boletas" name="boletas" type="text" inputmode="numeric" class="campo-pesos" required></div>
+      <div class="campo"><label for="nt_cifras">Cifras por boleta</label><input id="nt_cifras" name="cifras" type="number" min="1" max="10" required></div>
+      <button class="boton" type="submit">Agregar</button>
+    </form>
+  </section>
+  <section class="tarjeta" style="width:100%;max-width:none">
+    <h2 style="font-size:1.1rem">Duraciones</h2>
+    <p class="muted chico">Cuánto tiempo cubre cada pago. Una duración nueva aparece como columna en la tabla, con precios en 0.</p>
+    {% for d in duraciones %}
+    <form method="post" action="/admin/planes/duracion/{{ d.id }}" class="fila-plan">
+      <div class="campo"><label>Nombre</label><input name="nombre" type="text" maxlength="40" value="{{ d.nombre }}" required></div>
+      <div class="campo"><label>Meses</label><input name="meses" type="number" min="1" max="36" value="{{ d.meses }}" required></div>
+      <label class="casilla" style="margin-bottom:.6rem"><input type="checkbox" name="activa" value="true" {% if d.activa %}checked{% endif %}> Activa</label>
+      <button class="boton secundario" type="submit">Guardar</button>
+    </form>
+    {% endfor %}
+    <form method="post" action="/admin/planes/duracion" class="fila-plan" style="border:0">
+      <div class="campo"><label>Nombre</label><input name="nombre" type="text" maxlength="40" placeholder="3 meses" required></div>
+      <div class="campo"><label>Meses</label><input name="meses" type="number" min="1" max="36" required></div>
+      <input type="hidden" name="activa" value="true">
+      <button class="boton" type="submit">Agregar</button>
+    </form>
+  </section>
+</div>
+{% endblock %}

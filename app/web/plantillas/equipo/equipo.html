@@ -1,0 +1,34 @@
+{# Equipo del organizador (GET/POST /panel/equipo): personas que le ayudan, con su propio usuario. Solo el dueño entra. #}
+{% extends "panel/base_panel.html" %}
+{% set seccion = 'equipo' %}
+{% block titulo %}Equipo · RifaPlus{% endblock %}
+{% block contenido %}
+<div class="encabezado-pagina"><div><h1 style="font-size:1.8rem">Equipo</h1>
+  <p class="muted">Personas que le ayudan con sus rifas. Cada una entra con su propio correo y clave, y solo pueden entrar las que usted agregue. Pueden crear y editar rifas, vender y registrar pagos y resultados; no pueden manejar el equipo ni eliminar rifas. Lo que hace cada una queda registrado.</p></div></div>
+{% if error %}<div class="alerta error" role="alert">{{ error }}</div>{% endif %}
+{% if aviso %}<div class="alerta ok">Cambio guardado.</div>{% endif %}
+{% if nuevo %}
+<div class="alerta ok"><b>{{ nuevo.nombre }}</b> ya es parte de su equipo. Le enviamos la clave temporal a {{ nuevo.email }}.
+  Si no le llega, désela usted: <code style="font-size:1.1rem">{{ nuevo.clave }}</code> (no se vuelve a mostrar). Al entrar, deberá crear su clave definitiva.</div>
+{% endif %}
+
+<div class="tabla-envoltura" style="margin-bottom:1.5rem"><table class="datos">
+  <thead><tr><th>Nombre</th><th>Correo</th><th>Rol</th><th>Estado</th><th></th></tr></thead>
+  <tbody>
+  {% for m in miembros %}
+    <tr {% if not m.activo %}class="muted"{% endif %}><td><b>{{ m.nombre }}</b></td><td>{{ m.email }}</td>
+      <td>{{ 'Organizador (usted)' if m.rol == 'admin' else 'Colaborador' }}</td>
+      <td>{% if not m.activo %}<span class="estado borrador">inactivo</span>{% elif m.debe_cambiar_clave %}<span class="estado pendiente">no ha entrado</span>{% else %}<span class="estado aprobado">activo</span>{% endif %}</td>
+      <td>{% if m.rol == 'colaborador' %}<form method="post" action="/panel/equipo/{{ m.id }}"><input type="hidden" name="activo" value="{{ 'false' if m.activo else 'true' }}">
+        <button class="enlace-boton" type="submit" {% if m.activo %}data-confirmar="¿Quitarle el acceso a {{ m.nombre }}? Se cerrarán sus sesiones."{% endif %}>{{ 'Quitar acceso' if m.activo else 'Devolver acceso' }}</button></form>{% endif %}</td></tr>
+  {% endfor %}
+  </tbody></table></div>
+
+<form class="tarjeta" method="post" action="/panel/equipo" style="width:100%;max-width:640px">
+  <h2 style="font-size:1.2rem">Agregar a alguien</h2>
+  <div class="campo"><label for="nombre">Nombre completo</label><input id="nombre" name="nombre" type="text" required maxlength="150" data-validar="requerido nombre"></div>
+  <div class="campo"><label for="email">Correo</label><input id="email" name="email" type="email" required data-validar="requerido email"><span class="ayuda">Con este correo entrará a RifaPlus.</span></div>
+  <button class="boton" type="submit">Agregar al equipo</button>
+</form>
+<script src="/estaticos/js/confirmar.js?v={{ v }}" defer></script>
+{% endblock %}

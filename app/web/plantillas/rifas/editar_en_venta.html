@@ -1,0 +1,57 @@
+{# Corregir una rifa en venta (GET/POST /panel/rifas/{id}/editar): nombre, descripción, premios y premios secos nuevos. #}
+{% extends "panel/base_panel.html" %}
+{% set seccion = 'rifas' %}
+{% block titulo %}Corregir {{ rifa.nombre }} · RifaPlus{% endblock %}
+{% block contenido %}
+<p><a href="/panel/rifas/{{ rifa.id }}">← {{ rifa.nombre }}</a></p>
+<div class="encabezado-pagina"><div><h1 style="font-size:1.8rem">Corregir rifa</h1>
+  <p class="muted">La rifa ya está en venta: solo puede cambiar lo que no perjudica a quien ya compró. La fecha, la lotería, el precio, las cuotas, las reglas y las boletas quedan como están.</p></div></div>
+<form class="tarjeta ancha" method="post" action="/panel/rifas/{{ rifa.id }}/editar" style="width:100%;max-width:880px" enctype="multipart/form-data">
+  {% if errores %}<div class="alerta error" role="alert"><ul>{% for e in errores %}<li>{{ e }}</li>{% endfor %}</ul></div>{% endif %}
+  <div class="campo"><label for="nombre">Nombre de la rifa</label>
+    <input id="nombre" name="nombre" type="text" required maxlength="150" data-validar="requerido texto" value="{{ rifa.nombre }}"></div>
+  <div class="campo"><label for="descripcion">Descripción</label>
+    <textarea id="descripcion" name="descripcion" rows="3">{{ rifa.descripcion or '' }}</textarea></div>
+
+  <hr class="separador">
+  <p class="grupo-titulo">Premios</p>
+  {% for p in rifa.premios|sort(attribute='orden') %}
+  <div class="fila">
+    <div class="campo"><label for="pd{{ p.id }}">{{ 'Premio mayor' if p.tipo == 'mayor' else 'Premio seco' }} · {{ p.nombre_loteria }} · {{ p.fecha|fecha_larga }}</label>
+      {% if p.resultado %}<input id="pd{{ p.id }}" type="text" value="{{ p.descripcion }}" disabled><span class="ayuda">Ya jugó: no se puede cambiar.</span>
+      {% else %}<input id="pd{{ p.id }}" name="premio_descripcion_{{ p.id }}" type="text" maxlength="300" data-validar="requerido texto" value="{{ p.descripcion }}">{% endif %}</div>
+    <div class="campo"><label for="pv{{ p.id }}">Valor estimado</label>
+      <input id="pv{{ p.id }}" {% if not p.resultado %}name="premio_valor_{{ p.id }}"{% else %}disabled{% endif %} type="text" inputmode="numeric" class="campo-pesos" value="{{ p.valor_estimado|miles if p.valor_estimado else '' }}"></div>
+  </div>
+  {% if not p.resultado %}
+  <div class="campo campo-foto" style="margin-top:-.5rem"><label for="pf{{ p.id }}">Foto {{ 'nueva' if p.foto_url else '(opcional)' }}</label>
+    <div class="foto-fila">{% if p.foto_url %}<img class="miniatura" src="/archivos/{{ p.foto_url }}" alt="">{% endif %}
+    <input id="pf{{ p.id }}" name="premio_foto_{{ p.id }}" type="file" accept="image/jpeg,image/png,image/webp"></div></div>
+  {% endif %}
+  {% endfor %}
+
+  <hr class="separador">
+  <p class="grupo-titulo">Agregar premios secos</p>
+  <p class="ayuda" style="margin-top:-.5rem">Puede sumar premios nuevos; deben jugar después de hoy y antes del {{ rifa.fecha_sorteo|fecha_larga }}.</p>
+  <div id="filas-secos"></div>
+  <button type="button" class="boton secundario" id="agregar-seco">+ Agregar premio seco</button>
+  <template id="plantilla-seco">
+    <div class="fila-seco">
+      <div class="campo"><label>Premio</label><input type="text" name="seco_descripcion_N" maxlength="300" placeholder="Licuadora"></div>
+      <div class="campo"><label>Lotería</label><select name="seco_loteria_id_N">{% for l in loterias %}<option value="{{ l.id }}">{{ l.nombre }}</option>{% endfor %}</select></div>
+      <div class="campo"><label>Valor estimado</label><input type="text" inputmode="numeric" class="campo-pesos" name="seco_valor_estimado_N" placeholder="500.000"></div>
+      <div class="campo"><label>Fecha</label><input type="date" name="seco_fecha_juego_N"></div>
+      <button type="button" class="enlace-boton quitar-seco">Quitar</button>
+    </div>
+  </template>
+  <button class="boton grande" type="submit" style="margin-top:1.25rem">Guardar cambios</button>
+</form>
+<script>
+  // Agregar y quitar filas de premios secos nuevos
+  const filas = document.getElementById('filas-secos'), plantilla = document.getElementById('plantilla-seco');
+  const renumerar = () => filas.querySelectorAll('.fila-seco').forEach((f, i) =>
+    f.querySelectorAll('[name]').forEach(el => { el.name = el.name.replace(/_(\d+|N)$/, '_' + (i + 1)); }));
+  document.getElementById('agregar-seco').addEventListener('click', () => { filas.appendChild(plantilla.content.cloneNode(true)); renumerar(); });
+  filas.addEventListener('click', e => { if (e.target.classList.contains('quitar-seco')) { e.target.closest('.fila-seco').remove(); renumerar(); } });
+</script>
+{% endblock %}

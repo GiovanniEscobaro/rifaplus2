@@ -1,0 +1,32 @@
+{# Verificación pública de boletas (GET /verificar y /verificar/{codigo}): autenticidad, estado de pago y premios ganados. #}
+{% extends "base.html" %}
+{% block titulo %}Verificar boleta · RifaPlus{% endblock %}
+{% block cuerpo %}
+{% include "componentes/cabecera_publica.html" %}
+<main class="pagina-form">
+  <div class="tarjeta">
+    <h1 style="font-size:1.8rem">Verificar una boleta</h1>
+    <form method="get" action="/verificar" class="campo">
+      <label for="codigo">Código impreso en la boleta</label>
+      <div style="display:flex;gap:.5rem"><input id="codigo" name="codigo" type="text" value="{{ codigo }}" placeholder="K7MPQ2XA4B" required>
+      <button class="boton" type="submit">Verificar</button></div>
+    </form>
+    {% if codigo and boleta %}
+      <div class="alerta ok"><b>Boleta auténtica.</b></div>
+      {% for g in ganados or [] %}<div class="alerta ok" style="font-size:1.05rem">🎉 <b>Esta boleta ganó: {{ g.premio.descripcion }}</b> (cayó el {{ g.numero_loteria }}).{% if g.estado == 'debe_saldo' %} Debe pagar su saldo para recibir el premio.{% endif %}</div>{% endfor %}
+      <p><b>{{ boleta.rifa.nombre }}</b><br>Boleta {{ boleta.etiqueta }} · Juega con la {{ boleta.rifa.loteria.nombre }} el {{ boleta.rifa.fecha_sorteo|fecha_larga }}</p>
+      <p>{{ "Número" if boleta.numeros|length == 1 else "Números" }} que juega: {% for n in boleta.numeros %}<b>{{ n.numero }}</b>{% if not loop.last %}, {% endif %}{% endfor %}</p>
+      <p>Estado:
+        {% if estado_pago == 'pagada' %}<span class="estado aprobado">Vendida y pagada</span>
+        {% elif estado_pago %}<span class="estado pendiente">Vendida, con saldo pendiente</span>
+        {% else %}<span class="estado {{ boleta.estado }}">{{ boleta.estado|capitalize }}</span>{% endif %}</p>
+      <hr class="separador">
+      <p class="chico"><b>Organiza:</b> {{ boleta.rifa.organizador.nombre }}</p>
+      <p class="muted chico">RifaPlus es una plataforma de administración. La rifa, sus premios y su autorización son responsabilidad exclusiva del organizador.</p>
+    {% elif codigo %}
+      <div class="alerta error">No existe ninguna boleta con el código {{ codigo }}. Revise que lo haya escrito igual a como aparece impreso.</div>
+    {% endif %}
+  </div>
+</main>
+{% include "componentes/pie_publico.html" %}
+{% endblock %}

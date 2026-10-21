@@ -1,0 +1,43 @@
+# Dependencias de RifaPlus en producción, con versiones FIJAS (probadas con las 156 pruebas en Python 3.12).
+# Las primeras son las que usa el código directamente; el resto las instalan ellas y también quedan fijas
+# para que el servidor arme siempre exactamente lo mismo.
+#
+# Para actualizar: cambiar versiones en un entorno de prueba, correr pytest y, si todo pasa, copiar aquí.
+
+# Directas
+alembic==1.20.0
+bcrypt==5.0.0
+email-validator==2.3.0
+fastapi==0.150.0
+jinja2==3.1.6
+psycopg-binary==3.3.6
+psycopg==3.3.6
+pydantic-settings==2.16.0
+python-multipart==0.0.32
+segno==1.6.6
+sqlalchemy==2.1.5
+tzdata==2026.5
+uvicorn[standard]==0.54.0
+
+# Indirectas (las instalan las de arriba)
+annotated-doc==0.0.5
+annotated-types==0.8.0
+anyio==4.15.1
+click==8.5.0
+dnspython==2.9.0
+h11==0.16.0
+httptools==0.9.0
+idna==3.20
+mako==1.4.3
+markupsafe==3.0.4
+opentelemetry-api==1.45.1
+pydantic-core==2.50.1
+pydantic==2.14.1
+python-dotenv==1.2.4
+pyyaml==6.0.3
+starlette==1.9.0
+typing-extensions==4.16.0
+typing-inspection==0.4.4
+uvloop==0.23.0
+watchfiles==1.3.0
+websockets==17.3

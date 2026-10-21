@@ -1,0 +1,32 @@
+{# Cuentas de RifaPlus (GET/POST /admin/cuentas): Nequi y Daviplata donde los organizadores pagan sus planes. #}
+{% extends "admin/base_admin.html" %}
+{% block titulo %}Cuentas de RifaPlus · Superadministrador{% endblock %}
+{% block contenido %}
+<div class="encabezado-pagina"><div><h1 style="font-size:1.8rem">Cuentas de RifaPlus</h1>
+  <p class="muted">Estas cuentas les aparecen a los organizadores al publicar una rifa de pago. Con una llave Bre-B le pueden pagar desde cualquier banco o billetera.</p></div></div>
+{% if cuentas %}
+<div class="tabla-envoltura" style="margin-bottom:1.5rem"><table class="datos">
+  <thead><tr><th>Medio</th><th>Llave o número</th><th>Titular</th><th>Estado</th><th></th></tr></thead>
+  <tbody>
+  {% for c in cuentas %}
+    <tr><td>{{ c.medio_pago.nombre }}</td><td><b>{{ c.numero_cuenta }}</b></td><td>{{ c.titular }}</td>
+      <td><span class="estado {{ 'aprobado' if c.activa else 'borrador' }}">{{ 'Activa' if c.activa else 'Inactiva' }}</span></td>
+      <td><form method="post" action="/admin/cuentas/{{ c.id }}"><input type="hidden" name="activa" value="{{ 'false' if c.activa else 'true' }}">
+        <button class="enlace-boton" type="submit">{{ 'Desactivar' if c.activa else 'Activar' }}</button></form></td></tr>
+  {% endfor %}
+  </tbody></table></div>
+{% endif %}
+<form class="tarjeta" method="post" action="/admin/cuentas" style="width:100%;max-width:760px">
+  <h2 style="font-size:1.2rem">Agregar cuenta</h2>
+  <div class="fila-3">
+    <div class="campo"><label for="medio">Medio</label>
+      <select id="medio" name="medio_pago_id" data-validar="seleccion"><option value="">Escoja…</option>
+        {% for m in medios %}<option value="{{ m.id }}">{{ m.nombre }}</option>{% endfor %}</select></div>
+    <div class="campo"><label for="numero_cuenta">Llave o número</label>
+      <input id="numero_cuenta" name="numero_cuenta" type="text" maxlength="30" data-validar="requerido" placeholder="@GESOFTWARE o 300 123 4567"></div>
+    <div class="campo"><label for="titular">Titular</label>
+      <input id="titular" name="titular" type="text" maxlength="150" data-validar="requerido texto"></div>
+  </div>
+  <button class="boton" type="submit">Agregar cuenta</button>
+</form>
+{% endblock %}

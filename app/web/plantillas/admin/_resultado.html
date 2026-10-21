@@ -1,0 +1,13 @@
+{# Tabla de resultados reutilizable para ver una tabla o el resultado de una consulta. Recibe "r". #}
+<div class="tabla-envoltura tabla-datos">
+  <table class="datos">
+    <thead><tr>{% for c in r.columnas %}<th>{{ c }}</th>{% endfor %}</tr></thead>
+    <tbody>
+    {% for fila in r.filas %}
+      <tr>{% for v in fila %}<td title="{{ v if v is not none }}">{% if v is none %}<span class="muted">—</span>{% else %}{{ v|string|truncate(80, true, '…') }}{% endif %}</td>{% endfor %}</tr>
+    {% else %}
+      <tr><td colspan="{{ r.columnas|length or 1 }}" class="muted">Sin resultados.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>

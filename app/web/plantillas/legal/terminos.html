@@ -1,0 +1,64 @@
+{# Términos y condiciones (GET /terminos). Los datos del responsable salen del .env (ver legal/_responsable.html). #}
+{% extends "base.html" %}
+{% block titulo %}Términos y condiciones · RifaPlus{% endblock %}
+{% block cuerpo %}
+{% import "legal/_responsable.html" as r with context %}
+{% include "componentes/cabecera_publica.html" %}
+<main class="seccion">
+  <article class="contenedor legal">
+    <h1>Términos y condiciones de RifaPlus</h1>
+    <p class="muted">Versión {{ version }}. Al registrarse, el organizador acepta estos términos. La versión aceptada queda registrada con su fecha.</p>
+
+    <h2>1. Quiénes somos</h2>
+    <p>RifaPlus es un servicio de software de la marca GE Desarrollo e Infraestructura de Software, prestado por {{ r.responsable }}, identificado con {{ r.documento }}, con domicilio en {{ r.ciudad }}, Colombia (en adelante "RifaPlus"). Correo de contacto: {{ r.contacto }}.</p>
+
+    <h2>2. Qué es RifaPlus</h2>
+    <p>RifaPlus es un software de administración que permite a sus usuarios ("organizadores") crear y gestionar sus propias rifas: generar boletas y números, registrar compradores, vendedores y abonos, verificar boletas y consultar el resultado contra la lotería escogida.</p>
+
+    <h2>3. Qué no es RifaPlus</h2>
+    <p>RifaPlus <b>no es operador, gestor ni organizador de rifas</b>. RifaPlus no vende boletas a su nombre, no recibe el dinero que pagan los compradores, no realiza sorteos, no compra, guarda ni entrega premios, y no garantiza el resultado ni el cumplimiento de ninguna rifa.</p>
+
+    <h2>4. Responsabilidades del organizador</h2>
+    <p>El organizador es el único responsable de su rifa y, en particular, de:</p>
+    <ul>
+      <li>Obtener la autorización de la rifa ante la autoridad competente antes de vender boletas. RifaPlus no tramita, verifica ni guarda esa autorización.</li>
+      <li>Cumplir la Ley 643 de 2001, sus decretos reglamentarios y las demás normas sobre juegos de suerte y azar.</li>
+      <li>Pagar los derechos de explotación, impuestos y demás obligaciones que genere su rifa.</li>
+      <li>Ofrecer premios permitidos por la ley: no se permiten premios en dinero ni bienes usados.</li>
+      <li>Recibir y administrar el dinero de sus compradores, y entregar los premios a quien gane.</li>
+      <li>Atender las preguntas, reclamos y devoluciones de sus compradores.</li>
+      <li>Que la información que registra (premios, fechas, autorización, datos de compradores) sea veraz.</li>
+    </ul>
+
+    <h2>5. Declaración por cada rifa</h2>
+    <p>Al crear cada rifa, el organizador declara que es su responsable, que cuenta o contará con la autorización requerida antes de vender, que el premio no es en dinero ni un bien usado, y que RifaPlus solo le presta la herramienta de administración. Esa declaración queda registrada con su fecha.</p>
+
+    <h2>6. Tarifas</h2>
+    <p>El uso de RifaPlus se paga una sola vez por cada rifa, según el tipo de rifa (boletas que vende y cifras por boleta) y la duración escogida (por ejemplo, 6 meses o 1 año), contada desde la publicación. El valor aplicable es el vigente al crear la rifa.</p>
+    <p><b>Vigencia y renovación.</b> Si la rifa sigue después del período pagado, el organizador debe renovarlo pagando otro período. RifaPlus le avisa antes del vencimiento. Si no renueva, la rifa queda <b>bloqueada</b> para el organizador (no podrá vender boletas, registrar pagos ni resultados, imprimir ni editar) hasta que pague la renovación. Los compradores conservan siempre la posibilidad de verificar sus boletas. Una rifa de pago no se puede publicar hasta que su pago esté aprobado.</p>
+    <p><b>Reembolsos.</b> Si RifaPlus no puede confirmar un pago, no se cobra nada y el organizador puede enviarlo de nuevo. Si el organizador pagó y su rifa no se publicó por una causa atribuible a RifaPlus, se le devuelve el valor completo. Una vez publicada la rifa, el valor del plan no es reembolsable, porque el servicio ya se prestó. Las solicitudes se atienden por el chat de soporte o en {{ r.contacto }}.</p>
+
+    <h2>7. Dinero de los compradores</h2>
+    <p>Los compradores pagan directamente al organizador, a las cuentas que este registre. RifaPlus no recibe, custodia ni transfiere ese dinero y no responde por pagos entre organizadores y compradores.</p>
+
+    <h2>8. Usos no permitidos</h2>
+    <p>No se permite usar RifaPlus para rifas sin autorización, rifas con premios en dinero o bienes usados, actividades fraudulentas, o para enviar mensajes a personas que no hayan aceptado recibirlos. RifaPlus puede suspender o cancelar la cuenta y las rifas que incumplan estos términos.</p>
+
+    <h2>9. Limitación de responsabilidad</h2>
+    <p>RifaPlus se ofrece como herramienta de software. RifaPlus no responde por el incumplimiento del organizador frente a sus compradores, autoridades o terceros, ni por decisiones tomadas con base en la información que el organizador registra.</p>
+
+    <h2>10. Indemnidad</h2>
+    <p>El organizador mantendrá indemne a RifaPlus frente a reclamos, sanciones o costos que se originen en su rifa o en el incumplimiento de estos términos o de la ley.</p>
+
+    <h2>11. Datos personales</h2>
+    <p>El tratamiento de datos se rige por la <a href="/tratamiento-de-datos">política de tratamiento de datos personales</a>. El organizador es responsable de los datos de sus compradores y vendedores que registra en RifaPlus.</p>
+
+    <h2>12. Cambios a estos términos</h2>
+    <p>RifaPlus puede actualizar estos términos. Cada versión queda identificada y se pedirá al organizador aceptarla de nuevo cuando haya cambios importantes.</p>
+
+    <h2>13. Ley aplicable</h2>
+    <p>Estos términos se rigen por las leyes de la República de Colombia.</p>
+  </article>
+</main>
+{% include "componentes/pie_publico.html" %}
+{% endblock %}

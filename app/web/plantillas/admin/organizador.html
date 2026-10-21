@@ -1,0 +1,101 @@
+{# Ficha de un organizador (GET /admin/organizadores/{id}): suspender, eliminar rifas u organizador con confirmación. #}
+{% extends "admin/base_admin.html" %}
+{% block titulo %}{{ o.nombre }} · Superadministrador{% endblock %}
+{% block contenido %}
+<p><a href="/admin/organizadores">← Organizadores</a></p>
+{% if clave_temporal %}<div class="alerta ok">Clave restablecida. La nueva clave temporal es <code style="font-size:1.15rem">{{ clave_temporal }}</code>: se la enviamos al correo del organizador, y también puede dársela por el chat de soporte. Al ingresar, deberá crear una clave nueva. Esta clave no se vuelve a mostrar.</div>{% endif %}
+<div class="encabezado-pagina">
+  <div>
+    <h1 style="font-size:1.8rem">{{ o.nombre }}</h1>
+    <p class="muted">{{ 'Persona jurídica' if o.tipo_persona == 'juridica' else 'Persona natural' }}{% if o.numero_documento %} · {{ o.tipo_documento }} {{ o.numero_documento }}{% endif %} · registrado el {{ o.fecha_creacion|fecha_larga }}</p>
+  </div>
+  <span class="estado {{ o.estado }}">{{ o.estado }}</span>
+</div>
+
+<div class="apilado">
+  <section class="tarjeta" style="width:100%;max-width:none">
+    <h2 style="font-size:1.2rem">Identidad {% if o.verificado %}<span class="estado aprobado">verificado</span>{% else %}<span class="estado pendiente">por verificar</span>{% endif %}</h2>
+    <p style="font-size:1.05rem;margin:.25rem 0"><b>{{ o.nombre }}</b> · {{ o.tipo_documento or '—' }} <b>{{ o.numero_documento or 'sin documento' }}</b></p>
+    {% if o.verificado %}
+      <p class="muted chico">Verificado el {{ o.verificado_en|hora_colombia('%d/%m/%Y %H:%M') }}.</p>
+      <form method="post" action="/admin/organizadores/{{ o.id }}/verificacion"><input type="hidden" name="accion" value="quitar">
+        <button class="enlace-boton" type="submit" data-confirmar="¿Quitar la verificación a {{ o.nombre }}? No podrá publicar más rifas hasta que lo verifique de nuevo.">Quitar verificación</button></form>
+    {% else %}
+      <p class="muted chico">Compruebe que el nombre corresponda al número de documento (por ejemplo, en la consulta pública de la Registraduría o de ADRES). Sin verificar, puede publicar una sola rifa.</p>
+      <form method="post" action="/admin/organizadores/{{ o.id }}/verificacion"><input type="hidden" name="accion" value="verificar">
+        <button class="boton" type="submit" data-confirmar="¿Confirma que revisó el nombre y el documento de {{ o.nombre }}?">Marcar como verificado</button></form>
+    {% endif %}
+  </section>
+
+  <section class="tarjeta contacto-org" style="width:100%;max-width:none">
+    <div><h2 style="font-size:1.2rem">Contacto</h2>
+    <p class="chico">Correo: {{ o.email }}<br>Celular: {{ o.celular }}<br>WhatsApp: {{ o.whatsapp }}<br>
+      {% if o.direccion %}Dirección: {{ o.direccion }}<br>{% endif %}{% if o.ciudad %}Ciudad: {{ o.ciudad }}{% endif %}</p></div>
+    <form method="post" action="/admin/organizadores/{{ o.id }}/estado">
+      {% if o.estado == 'suspendido' %}
+        <input type="hidden" name="nuevo" value="activo"><button class="boton" type="submit">Reactivar organizador</button>
+      {% else %}
+        <input type="hidden" name="nuevo" value="suspendido">
+        <button class="boton secundario" type="submit" data-confirmar="¿Suspender a {{ o.nombre }}? No podrá ingresar a RifaPlus hasta que lo reactive.">Suspender organizador</button>
+      {% endif %}
+    </form>
+    <form method="post" action="/admin/organizadores/{{ o.id }}/restablecer-clave" style="margin-top:.5rem">
+      <button class="enlace-boton" type="submit" data-confirmar="¿Restablecer la clave de {{ o.nombre }}? Se le enviará una clave temporal nueva y se cerrarán sus sesiones.">Restablecer clave</button>
+    </form>
+  </section>
+
+  <section class="tarjeta" style="width:100%;max-width:none">
+    <h2 style="font-size:1.2rem">Rifas ({{ rifas|length }})</h2>
+    {% if rifas %}
+    <div class="tabla-envoltura">
+      <table class="datos">
+        <thead><tr><th>Rifa</th><th>Estado</th><th>Vendidas</th><th>Recaudado</th><th>Plan</th><th></th></tr></thead>
+        <tbody>
+        {% for f in rifas %}
+          <tr>
+            <td><b>{{ f.rifa.nombre }}</b><br><span class="muted chico">Sorteo: {{ f.rifa.fecha_sorteo|fecha_larga }}</span></td>
+            <td><span class="estado {{ f.rifa.estado }}">{{ f.rifa.estado|replace('_', ' ') }}</span></td>
+            <td>{{ f.vendidas|miles }} de {{ f.rifa.total_boletas|miles }}</td>
+            <td>{{ f.recaudado|pesos }}</td>
+            <td>{{ f.rifa.plan.nombre }}{% if f.cobro %}<br>{{ f.cobro.valor|pesos }} <span class="estado {{ f.cobro.estado }}">{{ f.cobro.estado }}</span>
+              {% if f.cobro.estado != 'aprobado' %}
+              <details class="borrar"><summary style="color:var(--azul)">Cambiar valor</summary>
+                <form method="post" action="/admin/rifas/{{ f.rifa.id }}/cobro" class="form-borrar">
+                  <input name="valor" type="text" inputmode="numeric" class="campo-pesos" value="{{ f.cobro.valor|miles }}" aria-label="Nuevo valor">
+                  <input name="motivo" type="text" maxlength="200" placeholder="Motivo (descuento, cortesía…)" aria-label="Motivo" required>
+                  <span class="ayuda">Con $0 queda aprobada y el organizador puede publicar.</span>
+                  <button class="boton" type="submit">Guardar</button>
+                </form></details>
+              {% endif %}{% endif %}</td>
+            <td>
+              <details class="borrar">
+                <summary>Eliminar</summary>
+                <form method="post" action="/admin/rifas/{{ f.rifa.id }}/eliminar" class="form-borrar">
+                  <p class="chico">Se borrará la rifa con <b>todas</b> sus boletas, compradores asignados y pagos. No se puede deshacer.</p>
+                  <label class="chico" for="c{{ f.rifa.id }}">Para confirmar escriba el nombre de la rifa: <b>{{ f.rifa.nombre }}</b></label>
+                  <input id="c{{ f.rifa.id }}" name="confirmacion" type="text" autocomplete="off" data-debe-ser="{{ f.rifa.nombre }}">
+                  <button class="boton peligro" type="submit" disabled>Eliminar</button>
+                </form>
+              </details>
+            </td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}<p class="muted">Este organizador no tiene rifas.</p>{% endif %}
+  </section>
+</div>
+
+{% if not rifas %}
+<form method="post" action="/admin/organizadores/{{ o.id }}/eliminar" class="zona-peligro form-borrar">
+  <div><b>Eliminar este organizador</b><br>
+    <span class="muted chico">Se borran su cuenta, sus usuarios, compradores y vendedores. Para confirmar escriba su correo: <b>{{ o.email }}</b></span>
+    <input name="confirmacion" type="text" autocomplete="off" data-debe-ser="{{ o.email }}" aria-label="Correo del organizador" style="margin-top:.5rem">
+  </div>
+  <button class="boton peligro" type="submit" disabled>Eliminar organizador</button>
+</form>
+{% else %}
+<p class="muted chico" style="margin-top:2rem">Para eliminar este organizador, primero elimine sus rifas.</p>
+{% endif %}
+{% endblock %}

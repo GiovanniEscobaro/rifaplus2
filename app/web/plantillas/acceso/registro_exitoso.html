@@ -1,0 +1,20 @@
+{# Confirmación del registro. En modo desarrollo muestra la clave temporal. #}
+{% extends "base.html" %}
+{% block titulo %}Cuenta creada · RifaPlus{% endblock %}
+{% block cuerpo %}
+{% include "componentes/cabecera_publica.html" %}
+<main class="pagina-form">
+  <div class="tarjeta">
+    <h1 style="font-size:1.8rem">Su cuenta está creada</h1>
+    {% if correo_activo %}
+      <p>Enviamos una clave temporal a <b>{{ email }}</b>. Revise su correo (también la carpeta de spam), ingrese con ella y RifaPlus le pedirá crear su clave definitiva.</p>
+    {% else %}
+      <p>Esta es su clave temporal. Cópiela: con ella ingresa y RifaPlus le pedirá crear su clave definitiva.</p>
+    {% endif %}
+    {% if clave_desarrollo %}
+    <div class="alerta aviso">Clave temporal: <code style="font-size:1.2rem">{{ clave_desarrollo }}</code></div>
+    {% endif %}
+    <a class="boton grande" href="/ingresar" style="width:100%">Ingresar</a>
+  </div>
+</main>
+{% endblock %}

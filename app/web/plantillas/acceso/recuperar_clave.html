@@ -1,0 +1,25 @@
+{# Olvidé mi clave (GET/POST /recuperar-clave): pide el correo y envía un enlace de un solo uso. #}
+{% extends "base.html" %}
+{% block titulo %}Recuperar clave · RifaPlus{% endblock %}
+{% block cuerpo %}
+{% include "componentes/cabecera_publica.html" %}
+<main class="pagina-form">
+  <form class="tarjeta" method="post" action="/recuperar-clave">
+    <h1 style="font-size:1.8rem">Recuperar su clave</h1>
+    {% if enviado %}
+      <div class="alerta ok">Si <b>{{ email }}</b> tiene una cuenta en RifaPlus, le enviamos un enlace para crear una clave nueva. Revise su correo, también la carpeta de spam. El enlace vence en una hora.</div>
+      {% if enlace_desarrollo %}
+      <div class="alerta aviso">Modo desarrollo: el correo no está configurado en el .env, así que el mensaje no salió.
+        Para probar, use este enlace: <a href="{{ enlace_desarrollo }}">crear clave nueva</a>.</div>
+      {% endif %}
+      <a href="/ingresar">Volver a ingresar</a>
+    {% else %}
+      <p class="muted">Escriba el correo con el que se registró y le enviaremos un enlace para crear una clave nueva.</p>
+      <div class="campo"><label for="email">Correo electrónico</label>
+        <input id="email" name="email" type="email" required autocomplete="email" data-validar="requerido email" autofocus></div>
+      <button class="boton grande" type="submit" style="width:100%">Enviar enlace</button>
+      <p class="muted chico" style="margin-top:1rem;text-align:center"><a href="/ingresar">Volver a ingresar</a></p>
+    {% endif %}
+  </form>
+</main>
+{% endblock %}

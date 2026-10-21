@@ -1,0 +1,47 @@
+{# Renovar la vigencia de una rifa publicada (GET/POST /panel/rifas/{id}/renovar). #}
+{% extends "panel/base_panel.html" %}
+{% set seccion = 'rifas' %}
+{% block titulo %}Renovar {{ rifa.nombre }} · RifaPlus{% endblock %}
+{% block contenido %}
+<p><a href="/panel/rifas/{{ rifa.id }}">← {{ rifa.nombre }}</a></p>
+<div class="encabezado-pagina"><div><h1 style="font-size:1.8rem">Renovar la rifa</h1>
+  <p class="muted">{% if bloqueada %}<b style="color:var(--error)">La rifa está bloqueada:</b> su vigencia venció el {{ rifa.vigente_hasta|fecha_larga }}. Al renovar se desbloquea.{% else %}Su rifa está vigente hasta el <b>{{ rifa.vigente_hasta|fecha_larga }}</b>. Al renovar, el nuevo período se suma a partir de esa fecha.{% endif %}</p></div></div>
+{% if errores %}<div class="alerta error" role="alert"><ul>{% for e in errores %}<li>{{ e }}</li>{% endfor %}</ul></div>{% endif %}
+
+{% if pendiente %}
+  <div class="alerta aviso">Ya envió una renovación por {{ pendiente.meses }} meses ({{ pendiente.valor|pesos }}) y RifaPlus la está revisando. En cuanto la apruebe, la rifa queda renovada.</div>
+{% elif not opciones %}
+  <div class="alerta aviso">Este tipo de rifa no tiene precios de renovación. Escríbanos por el chat de ayuda.</div>
+{% else %}
+{% if rechazada %}<div class="alerta error">La renovación anterior no se pudo confirmar: {{ rechazada.motivo_rechazo }}</div>{% endif %}
+<form method="post" action="/panel/rifas/{{ rifa.id }}/renovar" enctype="multipart/form-data">
+<div class="dos-columnas">
+  <section class="tarjeta" style="width:100%;max-width:none">
+    <h2 style="font-size:1.2rem">1. ¿Por cuánto tiempo renueva?</h2>
+    <div class="opciones-duracion">
+      {% for d, valor in opciones %}
+      <label class="opcion-duracion"><input type="radio" name="duracion_id" value="{{ d.id }}" required {% if loop.first or datos.duracion_id == d.id|string %}checked{% endif %}>
+        <span><b>{{ d.nombre }}</b> · <span class="precio-duracion">{{ 'Gratis' if valor == 0 else valor|pesos }}</span></span></label>
+      {% endfor %}
+    </div>
+    {% if cuentas %}
+      <p class="muted chico">Pague a la cuenta de RifaPlus:</p>
+      <ul class="lista-premios">{% for c in cuentas %}<li class="mayor"><span class="tipo-premio">{{ c.medio_pago.nombre }}</span><b>{{ c.numero_cuenta }}</b><span class="muted chico">A nombre de {{ c.titular }}</span></li>{% endfor %}</ul>
+    {% endif %}
+  </section>
+  <section class="tarjeta" style="width:100%;max-width:none">
+    <h2 style="font-size:1.2rem">2. Cuéntenos que pagó</h2>
+    <p class="ayuda">Si la renovación es gratis, no tiene que llenar nada: toque «Renovar».</p>
+    <div class="campo"><label for="medio">¿Por dónde pagó?</label>
+      <select id="medio" name="medio_pago_id"><option value="">Escoja…</option>
+        {% for m in medios %}<option value="{{ m.id }}">{{ m.nombre }}</option>{% endfor %}</select></div>
+    <div class="campo"><label for="referencia">Referencia de la transacción</label>
+      <input id="referencia" name="referencia" type="text" maxlength="100" value="{{ datos.referencia or '' }}"></div>
+    <div class="campo"><label for="comprobante">Foto del comprobante</label>
+      <input id="comprobante" name="comprobante" type="file" accept="image/jpeg,image/png,image/webp,application/pdf"></div>
+    <button class="boton grande" type="submit">Renovar</button>
+  </section>
+</div>
+</form>
+{% endif %}
+{% endblock %}

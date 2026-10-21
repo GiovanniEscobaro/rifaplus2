@@ -1,0 +1,100 @@
+{# Boleta individual (GET /panel/rifas/{id}/boletas/{id}/imprimir y GET /boleta/{codigo}).
+   Diseño tipo talonario: cuerpo con la rifa, premios, números y pagos; talón con el QR para verificarla.
+   Con b.completa=False (enlace público) no muestra documento ni celular del comprador. #}
+{% extends "base.html" %}
+{% set bo = b.boleta %}{% set r = bo.rifa %}
+{% block titulo %}Boleta {{ bo.etiqueta }} · {{ r.nombre }}{% endblock %}
+{% block og_titulo %}Boleta {{ bo.etiqueta }} · {{ r.nombre }}{% endblock %}
+{% block og_imagen %}{% if b.mayor and b.mayor.foto_url %}/archivos/{{ b.mayor.foto_url }}{% endif %}{% endblock %}
+{% block og_descripcion %}{% if b.mayor %}Premio mayor: {{ b.mayor.descripcion }}. Juega con la {{ b.mayor.nombre_loteria }} el {{ b.mayor.fecha|fecha_larga }}. {% endif %}Organiza {{ r.organizador.nombre }}.{% endblock %}
+{% block cuerpo %}
+<link rel="stylesheet" href="/estaticos/css/boleta.css?v={{ v }}">
+<main class="hoja">
+  <div class="barra-acciones no-imprimir">
+    {% if b.completa %}<a href="/panel/rifas/{{ r.id }}/boletas/{{ bo.id }}">← Volver a la boleta</a>{% else %}<span></span>{% endif %}
+    <div class="acciones-sorteo">
+      {% if b.whatsapp %}<a class="boton boton-whatsapp" href="{{ b.whatsapp }}" target="_blank" rel="noopener">Enviar por WhatsApp</a>{% endif %}
+      {% if b.correo %}<a class="boton secundario" href="{{ b.correo }}">Enviar por correo</a>{% endif %}
+      <button class="boton" type="button" onclick="window.print()">Imprimir o guardar en PDF</button>
+    </div>
+  </div>
+
+  <article class="boleta-ind" aria-label="Boleta {{ bo.etiqueta }} de {{ r.nombre }}">
+    <section class="bi-cuerpo">
+      <header class="bi-cabecera">
+        <div>
+          <p class="bi-organiza">{{ r.organizador.nombre }} presenta</p>
+          <h1 class="bi-rifa">{{ r.nombre }}</h1>
+        </div>
+        <div class="bi-numero-boleta">
+          <span>Boleta</span>
+          <strong>{{ bo.etiqueta }}</strong>
+        </div>
+      </header>
+
+      {% if b.mayor %}
+      <div class="bi-premio-mayor">
+        {% if b.mayor.foto_url %}<img class="bi-foto-mayor" src="/archivos/{{ b.mayor.foto_url }}" alt="Foto de {{ b.mayor.descripcion }}">{% endif %}
+        <div>
+          <span class="bi-etiqueta">Premio mayor</span>
+          <p class="bi-premio-nombre">{{ b.mayor.descripcion }}</p>
+          <p class="bi-premio-detalle">{% if b.mayor.valor_estimado %}Avaluado en {{ b.mayor.valor_estimado|pesos }} · {% endif %}Juega con la {{ b.mayor.nombre_loteria }} el {{ b.mayor.fecha|fecha_larga }}</p>
+        </div>
+      </div>
+      {% endif %}
+
+      <div class="bi-numeros-bloque">
+        <span class="bi-etiqueta">{{ 'Su cifra' if bo.numeros|length == 1 else 'Sus cifras' }}</span>
+        <div class="bi-numeros">{% for n in bo.numeros %}<span>{{ n.numero }}</span>{% endfor %}</div>
+        <p class="bi-ayuda">Gana si {{ 'su cifra coincide' if bo.numeros|length == 1 else 'una de sus cifras coincide' }} con {{ 'el último número' if r.cifras == 1 else 'los últimos ' ~ r.cifras ~ ' números' }} del premio mayor de la lotería</p>
+      </div>
+
+      {% if b.secos %}
+      <div class="bi-secos">
+        <span class="bi-etiqueta">Premios secos <small>(para boletas al día)</small></span>
+        <ul>
+          {% for p in b.secos %}
+          <li>{% if p.foto_url %}<img class="bi-foto-seco" src="/archivos/{{ p.foto_url }}" alt="">{% endif %}<div><b>{{ p.descripcion }}</b>{% if p.valor_estimado %} · {{ p.valor_estimado|pesos }}{% endif %}<span>{{ p.nombre_loteria }} · {{ p.fecha|fecha_larga }}</span></div></li>
+          {% endfor %}
+        </ul>
+      </div>
+      {% endif %}
+
+      <div class="bi-pie-cuerpo">
+        <div class="bi-comprador">
+          <span class="bi-etiqueta">Comprador</span>
+          <p><b>{{ b.nombre_comprador }}</b>
+          {% if b.completa %}<br>{{ bo.cliente.tipo_documento }} {{ bo.cliente.numero_documento }} · Cel. {{ bo.cliente.celular }}<br>{{ bo.cliente.ciudad }}{% endif %}</p>
+        </div>
+        <div class="bi-pagos">
+          <span class="bi-etiqueta">Valor {{ r.valor_boleta|pesos }}</span>
+          {% if b.plan.cuotas|length > 1 %}
+          <table>
+            {% for c in b.plan.cuotas %}
+            <tr class="{{ 'pagada' if c.pagada else ('vencida' if c.vencida else '') }}">
+              <td>{{ '✓' if c.pagada else '○' }} Cuota {{ c.numero }}</td><td>{{ c.valor|pesos }}</td><td>{{ c.fecha_limite.strftime('%d/%m/%Y') }}</td>
+            </tr>
+            {% endfor %}
+          </table>
+          {% endif %}
+          <p class="bi-saldo {{ 'pagada' if not b.saldo.pendiente }}">{% if b.saldo.pendiente %}Pagado {{ b.saldo.pagado|pesos }} · <b>Saldo {{ b.saldo.pendiente|pesos }}</b>{% else %}<b>✓ Boleta pagada</b>{% endif %}</p>
+        </div>
+      </div>
+    </section>
+
+    <aside class="bi-talon">
+      <span class="bi-etiqueta">Verifique su boleta</span>
+      <div class="bi-qr">{{ b.qr_svg }}</div>
+      <p class="bi-codigo">{{ bo.codigo_verificacion }}</p>
+      <p class="bi-mini">Escanee el código o entre a<br>{{ b.url_publica.split('//')[-1].split('/')[0] }}/verificar</p>
+      <div class="bi-talon-numero">
+        <span>Boleta</span><strong>{{ bo.etiqueta }}</strong>
+        <span class="bi-mini">{% for n in bo.numeros %}{{ n.numero }}{% if not loop.last %} · {% endif %}{% endfor %}</span>
+      </div>
+    </aside>
+  </article>
+
+  <p class="bi-legal">Rifa organizada por {{ r.organizador.nombre }}, responsable de la rifa, su autorización y la entrega de los premios.
+  Plataforma de administración: RifaPlus, de GE Desarrollo e Infraestructura de Software.</p>
+</main>
+{% endblock %}

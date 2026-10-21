@@ -1,0 +1,21 @@
+{# Resumen del superadministrador (GET /admin). #}
+{% extends "admin/base_admin.html" %}
+{% block titulo %}Superadministrador · RifaPlus{% endblock %}
+{% block contenido %}
+<div class="encabezado-pagina"><h1 style="font-size:1.8rem">Resumen de RifaPlus</h1></div>
+<div class="alerta {{ 'ok' if correo_activo else 'aviso' }}" style="display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap">
+  <span>{% if correo_activo %}<b>Correo configurado.</b> Las claves temporales, «olvidé mi clave» y sus avisos se envían por correo.
+  {% else %}<b>El correo no está configurado.</b> Sin él, «olvidé mi clave» no envía nada. Agregue SMTP_USUARIO y SMTP_CLAVE al .env (ver .env.example) y reinicie RifaPlus.{% endif %}</span>
+  <form method="post" action="/admin/probar-correo"><button class="boton secundario" type="submit">Enviar correo de prueba</button></form>
+</div>
+<div class="cifras">
+  <a class="cifra" href="/admin/organizadores"><strong>{{ r.organizadores|miles }}</strong><span>organizadores ({{ r.activos|miles }} activos{% if r.suspendidos %}, {{ r.suspendidos|miles }} suspendidos{% endif %})</span></a>
+  <div class="cifra"><strong>{{ r.rifas|miles }}</strong><span>rifas ({{ r.en_venta|miles }} en venta)</span></div>
+  <a class="cifra" href="/admin/organizadores?estado=por_verificar"><strong>{{ r.por_verificar|miles }}</strong><span>organizadores por verificar</span></a>
+  <a class="cifra" href="/admin/cobros"><strong>{{ r.cobros_pendientes|miles }}</strong><span>pagos por revisar</span></a>
+  <div class="cifra"><strong>{{ r.ingresos|pesos }}</strong><span>ingresos aprobados de RifaPlus</span></div>
+  <a class="cifra" href="/admin/soporte"><strong>{{ r.soporte_pendiente|miles }}</strong><span>consultas de soporte por responder</span></a>
+</div>
+<h2 style="font-size:1.2rem">Últimos organizadores</h2>
+{% include "admin/_tabla_organizadores.html" %}
+{% endblock %}
